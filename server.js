@@ -58,6 +58,7 @@ if (BASIC_USER && BASIC_PASS) {
 const upload = multer({ storage: multer.memoryStorage() });
 
 // -------- Clinic Templates (ไม่จำเพาะโรค) --------
+// -------- Clinic Templates (ไม่จำเพาะโรค) --------
 const CLINICS = {
   neuromed: {
     name: 'Neurology Medicine',
@@ -72,7 +73,7 @@ const CLINICS = {
       team: ['Rehab/PT/OT ตามจำเป็น'],
       tele: true
     },
-    promptHint: เน้นสรุปอาการระบบประสาท, ตรวจโฟกัส CN/มอเตอร์/เซนซอรี/การเดิน และแผนติดตามจำเป็น
+    promptHint: เน้นสรุปอาการระบบประสาท, ตรวจโฟกัส CN/มอเตอร์/เซนซอรี/การเดิน และแผนติดตามที่จำเป็น
   },
   neurosx: {
     name: 'Neurosurgery',
@@ -80,14 +81,14 @@ const CLINICS = {
       default_window_days: 14,
       tests: ['CBC (post-op ถ้าจำเป็น)', 'Electrolytes (ถ้าสงสัย SIADH/DI)'],
       imaging: ['CT/MRI follow-up ตามชนิดผ่าตัด/ภาวะเลือดออก/มวลก้อน'],
-      meds: ['Pain control', 'Antibiotics (ตามแผลผ่าตัด)', 'DVT prophylaxis (ข้อบ่งชี้)'],
+      meds: ['Pain control', 'Antibiotics (ตามแผลผ่าตัด)', 'DVT prophylaxis (ตามข้อบ่งชี้)'],
       counsel: ['การดูแลแผลและสังเกตติดเชื้อ', 'ข้อจำกัดกิจกรรม'],
       monitor: ['ไข้/ปวดแผล/แผลบวมแดง', 'Neurologic status baseline'],
       red: ['แผลมีหนอง/บวมแดงมาก', 'ปวดศีรษะรุนแรงผิดปกติ', 'ซึมลง/ชัก'],
       team: ['Neuro ICU/Functional team ตามเคส'],
       tele: false
     },
-    promptHint: เพิ่มหัวข้อภาวะหลังผ่าตัด/การดูแลแผล/คำแนะนำกลับบ้าน และ red flags
+    promptHint: เพิ่มหัวข้อภาวะหลังผ่าตัด/การดูแลแผล/คำแนะนำก่อนกลับบ้าน และ red flags
   },
   rehab: {
     name: 'Physical Medicine & Rehabilitation',
@@ -102,7 +103,7 @@ const CLINICS = {
       team: ['PT/OT/SLT/Nutrition'],
       tele: true
     },
-    promptHint: เน้นเป้าหมายฟังก์ชัน, โปรแกรม PT/OT/SLT, อุปกรณ์ช่วยเดิน/ADL, ตัวชี้วัดความก้าวหน้า
+    promptHint: เน้นเป้าหมายฟังก์ชัน, โปรแกรม PT/OT/SLT, อุปกรณ์ช่วยเดิน/ADL และตัวชี้วัดความก้าวหน้า
   },
   psych: {
     name: 'Psychiatry',
@@ -110,29 +111,29 @@ const CLINICS = {
       default_window_days: 28,
       tests: ['CBC/CMP (ถ้าปรับยาเมตาบอลิก)', 'Lipid/Glucose (ถ้าใช้ SGA)'],
       imaging: [],
-      meds: ['ปรับ SSRIs/SNRIs/SGA ตามอาการและ side effects', 'ตรวจ drug-interaction'],
-      counsel: ['สัญญาณเตือนซึมเศร้ารุนแรง/คิดทำร้ายตนเอง', 'การนอน/จัดการความเครียด'],
-      monitor: ['PHQ-9/GAD-7/อื่น ๆ', 'Side-effect checklist'],
+      meds: ['ปรับ SSRIs/SNRIs/SGA ตามอาการและผลข้างเคียง', 'ตรวจ drug–interaction'],
+      counsel: ['สัญญาณเตือนซึมเศร้ารุนแรง/คิดทำร้ายตนเอง', 'การนอน/การจัดการความเครียด'],
+      monitor: ['PHQ-9 / GAD-7 / อื่น ๆ', 'Side-effect checklist'],
       red: ['มีความคิดทำร้ายตนเอง/ผู้อื่น', 'สับสนเฉียบพลัน', 'EPS รุนแรง'],
-      team: ['Psychology/SW/Family meeting'],
+      team: ['Psychology / Social Work / Family meeting'],
       tele: true
     },
-    promptHint: สรุปอารมณ์/ความคิด/พฤติกรรม ความปลอดภัย และแผนติดตามยาแบบปฏิบัติได้
+    promptHint: สรุปอารมณ์/ความคิด/พฤติกรรม ประเมินความปลอดภัย และแผนติดตามยาแบบปฏิบัติได้
   },
   oph: {
     name: 'Ophthalmology',
     followup: {
       default_window_days: 14,
-      tests: ['Visual acuity', 'Color vision', 'IOP', 'OCT/Visual field ตามจำเป็น'],
+      tests: ['Visual acuity', 'Color vision', 'IOP', 'OCT/Visual field (ถ้าจำเป็น)'],
       imaging: [],
       meds: ['ปรับตารางหยอดตา/สเตียรอยด์ตา/ยาลดความดันตา ตามข้อบ่งชี้'],
-      counsel: ['เทคนิคหยอดตา', 'หลีกเลี่ยงการขยี้ตา/สิ่งระคายเคือง'],
-      monitor: ['ปวดตา/ตามัว/แสงแฟลช'],
+      counsel: ['เทคนิคหยอดตาที่ถูกต้อง', 'หลีกเลี่ยงการขยี้ตา/สิ่งระคายเคือง'],
+      monitor: ['ปวดตา/ตามัว/เห็นแสงแฟลช'],
       red: ['ปวดตารุนแรง', 'สายตาลดลงเฉียบพลัน', 'ตาแดงมาก/ขี้ตาเยอะผิดปกติ'],
       team: ['Neuro-ophthalmology (ถ้าสงสัยเกี่ยวข้องระบบประสาท)'],
       tele: true
     },
-    promptHint: เพิ่มผลตรวจพื้นฐานตา (VA/IOP/สี/field ถ้ามี) และคำแนะนำการใช้ยาหยอดตาที่ถูกต้อง
+    promptHint: ระบุ VA/IOP/สี/field (ถ้ามี) และเน้นคำแนะนำการใช้ยาหยอดตา
   }
 };
 
