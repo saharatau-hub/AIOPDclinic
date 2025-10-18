@@ -1,234 +1,216 @@
 <!doctype html>
 <html lang="th">
 <head>
-  <meta charset="utf-8" />
-  <title>Tech Tool OPD Card + Follow-up (Clinic Templates)</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="utf-8">
+  <title>Transkriptor → OPD Card (Desktop)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body {font-family: system-ui, -apple-system, Segoe UI, Roboto, 'TH SarabunPSK', sans-serif; background:#0b1020; color:#e9eefb; margin:0}
-    header {background:linear-gradient(90deg,#0f3bd9,#6d95ff); padding:14px 18px; color:#fff}
-    main {max-width:980px; margin:20px auto; padding:0 16px 60px}
-    section {background:#141a33; border:1px solid #1f2747; border-radius:12px; padding:16px; margin-bottom:16px}
-    label {display:block; font-weight:700; color:#cfd8ff; margin-top:6px}
-    textarea, input, select {width:100%; padding:10px; border-radius:10px; border:1px solid #283157; background:#0f1530; color:#e9eefb}
-    input[type=file]{padding:6px}
-    .controls{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
-    button{padding:10px 14px; border-radius:10px; border:1px solid #4961ff; background:#2342ff; color:#fff; font-weight:700; cursor:pointer}
-    button.secondary{background:transparent; border-color:#37406a; color:#cfd8ff}
-    .out{white-space:pre-wrap; background:#0f1530; border:1px solid #283157; border-radius:10px; padding:12px; margin-top:8px; min-height:110px}
-    .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace}
-    .row{display:grid; gap:12px}
-    @media (min-width:760px){ .row-2{grid-template-columns:1fr 1fr} }
+    :root{
+      --bg:#ffffff; --fg:#111827; --muted:#6b7280; --accent:#2563eb; --accent-2:#10b981;
+      --line:#e5e7eb; --chip:#f3f4f6; --danger:#ef4444;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,'TH SarabunPSK',sans-serif}
+    header{padding:18px 20px;border-bottom:1px solid var(--line)}
+    header h1{margin:0;font-size:22px}
+    main{max-width:1100px;margin:18px auto;padding:0 14px 40px}
+    .card{border:1px solid var(--line);border-radius:14px;padding:16px;background:#fff}
+    .row{display:grid;gap:12px}
+    @media(min-width:900px){ .row-2{grid-template-columns:1fr 1fr} }
+    label{font-weight:700;display:block;margin-bottom:6px}
+    select,input[type=file]{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;background:#fff}
+    .btn{border:1px solid var(--accent);background:var(--accent);color:#fff;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:700}
+    .btn.secondary{background:#fff;color:var(--fg);border-color:var(--line)}
+    .btn.danger{background:var(--danger);border-color:var(--danger)}
+    .btn.ghost{background:#fff;border-color:var(--line)}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .chip{display:inline-flex;align-items:center;gap:6px;background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:6px 10px;color:var(--muted)}
+    .ok{background:rgba(16,185,129,.12);color:#065f46;border-color:#10b981}
+    .timer{min-width:60px;text-align:center;font-variant-numeric:tabular-nums}
+    textarea{width:100%;min-height:260px;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff;resize:vertical;line-height:1.6}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+    .right-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-bottom:6px}
+    small.muted{color:var(--muted)}
+    .divider{height:1px;background:var(--line);margin:14px 0}
   </style>
 </head>
 <body>
-<header>
-  <h2 style="margin:0">Tech Tool OPD Card + Follow-up</h2>
-  <div style="opacity:.85">เลือกคลินิก: Neuromed / Neurosx / กายภาพ / จิตเวช / จักษุ</div>
-</header>
-<main>
+  <header>
+    <h1>Transkriptor → OPD Card (Desktop)</h1>
+  </header>
 
-  <!-- 1) จากข้อความ -->
-  <section>
-    <h3 style="margin:0 0 8px 0">1) สรุป OPD จากข้อความ</h3>
-    <div class="row row-2">
-      <div>
-        <label for="clinic1">คลินิก</label>
-        <select id="clinic1">
-          <option value="neuromed" selected>Neuromed</option>
-          <option value="neurosx">Neurosx</option>
-          <option value="rehab">กายภาพ/เวชฟื้นฟู</option>
-          <option value="psych">จิตเวช</option>
-          <option value="oph">จักษุ</option>
-        </select>
-      </div>
-    </div>
-    <label for="raw">ข้อความดิบ</label>
-    <textarea id="raw" rows="6" placeholder="วาง/พิมพ์ข้อความบันทึกแพทย์ที่นี่..."></textarea>
-    <div class="controls">
-      <button id="btnText">สรุป OPD</button>
-      <button class="secondary" id="btnClearText">ล้าง</button>
-    </div>
-    <div class="out" id="outText"></div>
-  </section>
+  <main>
 
-  <!-- 2) จากเสียง (ปุ่มเดียว Record & Summarize + อัปโหลดไฟล์สำรอง) -->
-  <section>
-    <h3 style="margin:0 0 8px 0">2) สรุป OPD จากเสียงสนทนา (ปุ่มเดียว)</h3>
-    <div class="row row-2">
-      <div>
-        <label for="clinic2">คลินิก</label>
-        <select id="clinic2">
-          <option value="neuromed" selected>Neuromed</option>
-          <option value="neurosx">Neurosx</option>
-          <option value="rehab">กายภาพ/เวชฟื้นฟู</option>
-          <option value="psych">จิตเวช</option>
-          <option value="oph">จักษุ</option>
-        </select>
+    <!-- แผงบันทึกเสียง -->
+    <section class="card">
+      <div class="row row-2">
+        <div>
+          <label>ไมโครโฟน</label>
+          <select id="micSelect"></select>
+        </div>
+        <div>
+          <label>&nbsp;</label>
+          <div class="toolbar">
+            <button id="btnStart" class="btn">เริ่มบันทึกเสียง</button>
+            <button id="btnStop" class="btn danger" disabled>หยุด</button>
+            <span class="chip timer" id="timer">00:00</span>
+            <span class="chip" id="statusChip">ทั่วไป</span>
+            <select id="clinic" class="chip" title="คลินิก">
+              <option value="neuromed">ทั่วไป</option>
+              <option value="neurosx">Neurosx</option>
+              <option value="rehab">กายภาพ/เวชฟื้นฟู</option>
+              <option value="psych">จิตเวช</option>
+              <option value="oph">จักษุ</option>
+            </select>
+          </div>
+        </div>
       </div>
-      <div>
-        <label>&nbsp;</label>
-        <button id="btnRecordOne" style="width:100%">🎤 Record &amp; Summarize</button>
-      </div>
-    </div>
 
-    <div class="row row-2" style="margin-top:8px">
-      <div>
-        <label for="audio">หรือเลือกไฟล์เสียงที่มี</label>
-        <input id="audio" type="file" accept="audio/*" />
-      </div>
-      <div>
-        <label>&nbsp;</label>
-        <button id="btnUploadFile" class="secondary" style="width:100%">📤 อัปโหลดไฟล์ที่เลือก</button>
-      </div>
-    </div>
+      <div class="divider"></div>
 
-    <audio id="audioPreview" controls style="width:100%;margin-top:10px;display:none"></audio>
-    <div class="out" id="outTrans"></div>
-    <div class="out" id="outSum"></div>
-  </section>
-
-  <!-- 3) Follow-up Template ตามคลินิก -->
-  <section>
-    <h3 style="margin:0 0 8px 0">3) แผนติดตาม (Follow-up) แยกตามคลินิก</h3>
-    <div class="row row-2">
-      <div>
-        <label for="clinic3">คลินิก</label>
-        <select id="clinic3">
-          <option value="neuromed" selected>Neuromed</option>
-          <option value="neurosx">Neurosx</option>
-          <option value="rehab">กายภาพ/เวชฟื้นฟู</option>
-          <option value="psych">จิตเวช</option>
-          <option value="oph">จักษุ</option>
-        </select>
+      <div class="toolbar">
+        <input type="file" id="file" accept="audio/*">
+        <button id="btnUpload" class="btn">ส่งไฟล์ขึ้นเซิร์ฟเวอร์</button>
+        <span id="doneBadge" class="chip ok" style="display:none">สรุปสำเร็จ</span>
       </div>
-      <div>
-        <label for="risk">ระดับความเสี่ยง</label>
-        <select id="risk">
-          <option value="routine" selected>Routine</option>
-          <option value="urgent">Urgent</option>
-          <option value="high">High</option>
-        </select>
-      </div>
-    </div>
-    <label for="ctx">บริบท/ประเด็นสำคัญของผู้ป่วย</label>
-    <textarea id="ctx" rows="5" placeholder="เช่น หลังผ่าตัด/อ่อนแรง/ปวด/ต้องการกายภาพ..."></textarea>
-    <div class="controls">
-      <button id="btnFU">สร้างแผนติดตาม</button>
-      <button class="secondary" id="btnClearFU">ล้าง</button>
-    </div>
-    <div class="out mono" id="outFUJson"></div>
-    <div class="out" id="outFUMd"></div>
-  </section>
+      <small class="muted">เคล็ดลับ: ถ้าเสียงยาวมาก แนะนำบันทึกเป็น .m4a หรือ .webm จะอัปโหลดได้ไวกว่า .wav</small>
+    </section>
 
-</main>
+    <!-- Transcript + OPD Out -->
+    <section class="card" style="margin-top:16px">
+      <div class="row row-2">
+        <div>
+          <h3 style="margin:0 0 8px 0">Transcript (ข้อความถอดเสียง)</h3>
+          <div class="right-actions">
+            <button id="btnClearTranscript" class="btn ghost">ล้าง</button>
+          </div>
+          <textarea id="transcript" class="mono" placeholder="ข้อความจากการถอดเสียงจะแสดงที่นี่..."></textarea>
+          <div class="toolbar" style="margin-top:8px">
+            <button id="btnSumm" class="btn">สรุปเป็น OPD Card</button>
+            <button id="btnSummDeep" class="btn secondary" title="ใช้โมเดล o3 เพื่อวิเคราะห์ละเอียด">สรุปเชิงลึก (ใช้ o3)</button>
+          </div>
+        </div>
+
+        <div>
+          <h3 style="margin:0 0 8px 0">ผลลัพธ์ OPD Card</h3>
+          <div class="right-actions">
+            <button id="btnCopy" class="btn ghost">Copy</button>
+            <button id="btnSave" class="btn ghost">Save .txt</button>
+          </div>
+          <textarea id="opdOut" class="mono" placeholder="สรุปผล OPD Card จะปรากฏที่นี่..."></textarea>
+        </div>
+      </div>
+    </section>
+
+  </main>
 
 <script>
-const $ = (id) => document.getElementById(id);
+/* ---------- Helpers ---------- */
+const $ = (id)=>document.getElementById(id);
+const sleep = (ms)=>new Promise(r=>setTimeout(r,ms));
+function fmt(sec){sec=Math.max(0,sec|0);const m=String(Math.floor(sec/60)).padStart(2,'0');const s=String(sec%60).padStart(2,'0');return `${m}:${s}`;}
+function setChip(msg,ok){const el=$('statusChip');el.textContent=msg;el.className = 'chip'+(ok?' ok':'');}
+function saveText(filename, text){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'text/plain'}));a.download=filename;document.body.appendChild(a);a.click();a.remove();}
 
-// 1) From text
-$('btnText').onclick = async () => {
-  const clinicKey = $('clinic1').value;
-  const rawText = $('raw').value.trim();
-  if (!rawText) return alert('กรุณาใส่ข้อความ');
-  $('outText').textContent = 'กำลังสรุป...';
+/* ---------- Mic list ---------- */
+async function loadMics(){
   try{
-    const r = await fetch('/api/opd/from-text', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ clinicKey, rawText })
+    await navigator.mediaDevices.getUserMedia({audio:true});
+    const devs = await navigator.mediaDevices.enumerateDevices();
+    const mics = devs.filter(d=>d.kind==='audioinput');
+    const sel = $('micSelect'); sel.innerHTML='';
+    mics.forEach((m,i)=>{
+      const o=document.createElement('option');
+      o.value=m.deviceId; o.textContent=m.label||`ไมค์ ${i+1}`;
+      sel.appendChild(o);
     });
-    const d = await r.json();
-    $('outText').textContent = d.summary || JSON.stringify(d);
-  } catch(e){ $('outText').textContent = 'เกิดข้อผิดพลาด'; }
-};
-$('btnClearText').onclick = () => { $('raw').value=''; $('outText').textContent=''; };
-
-// 2) Record & Summarize (ปุ่มเดียว) + อัปโหลดไฟล์สำรอง
-let mediaRecorderOne = null, chunksOne = [], recordingTimer = null;
-const btnRecordOne = $('btnRecordOne'), audioPreview = $('audioPreview');
-
-function setRecBtn(state){ btnRecordOne.textContent = state==='rec' ? '⏹️ Stop & Summarize' : '🎤 Record & Summarize'; }
-
-async function startRec(){
-  const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
-  const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
-  mediaRecorderOne = new MediaRecorder(stream, { mimeType: mime });
-  chunksOne = [];
-  mediaRecorderOne.ondataavailable = e => { if(e.data.size>0) chunksOne.push(e.data); };
-  mediaRecorderOne.onstop = async () => {
-    const blob = new Blob(chunksOne, { type: mime });
-    const url = URL.createObjectURL(blob);
-    audioPreview.src = url; audioPreview.style.display='block';
-    await uploadBlobAndSummarize(blob, 'recorded.webm');
-  };
-  mediaRecorderOne.start(250);
-  setRecBtn('rec');
-  recordingTimer = setTimeout(()=>{ if(mediaRecorderOne?.state==='recording') mediaRecorderOne.stop(); }, 15*60*1000);
+  }catch(e){ setChip('อนุญาตไมค์ก่อน', false); }
 }
 
-function stopRec(){
-  if(mediaRecorderOne && mediaRecorderOne.state==='recording'){
-    mediaRecorderOne.stop();
-    mediaRecorderOne.stream.getTracks().forEach(t=>t.stop());
-  }
-  clearTimeout(recordingTimer);
-  setRecBtn('idle');
-}
+/* ---------- Recorder ---------- */
+let mediaRecorder, chunks=[], timerId=null, t0=0;
 
-btnRecordOne.onclick = async () => {
-  if(!mediaRecorderOne || mediaRecorderOne.state==='inactive'){
-    try{ $('outTrans').textContent='กำลังบันทึกเสียง...'; $('outSum').textContent=''; await startRec(); }
-    catch(e){ $('outTrans').textContent='❌ ไม่เข้าถึงไมค์: '+(e.message||e); setRecBtn('idle'); }
-  } else {
-    $('outTrans').textContent='กำลังอัปโหลดและถอดเสียง...';
-    stopRec();
-  }
-};
-
-async function uploadBlobAndSummarize(blob, filename){
+$('btnStart').onclick = async ()=>{
   try{
-    const clinicKey = $('clinic2').value;
-    const fd = new FormData();
+    const deviceId = $('micSelect').value || undefined;
+    const stream = await navigator.mediaDevices.getUserMedia({ audio:{ deviceId: deviceId ? {exact:deviceId}:undefined }});
+    const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+    mediaRecorder = new MediaRecorder(stream,{mimeType:mime}); chunks=[];
+    mediaRecorder.ondataavailable = e=>{ if(e.data.size>0) chunks.push(e.data); };
+    mediaRecorder.onstop = async ()=>{
+      stream.getTracks().forEach(t=>t.stop());
+      const blob = new Blob(chunks,{type:mime});
+      await uploadBlob(blob,'recorded.webm');
+    };
+    mediaRecorder.start(250);
+    $('btnStart').disabled=true; $('btnStop').disabled=false; setChip('กำลังบันทึก…', true);
+    t0 = Date.now(); $('timer').textContent='00:00';
+    timerId = setInterval(()=>{ $('timer').textContent = fmt(((Date.now()-t0)/1000)|0); }, 500);
+  }catch(e){ setChip('ไม่พบไมค์/ไม่ได้อนุญาต', false); }
+};
+
+$('btnStop').onclick = ()=>{
+  if(mediaRecorder && mediaRecorder.state==='recording'){ mediaRecorder.stop(); }
+  $('btnStart').disabled=false; $('btnStop').disabled=true;
+  clearInterval(timerId); setChip('กำลังอัปโหลด…', true);
+};
+
+$('btnUpload').onclick = async ()=>{
+  const f=$('file').files[0];
+  if(!f) return alert('เลือกไฟล์เสียงก่อน');
+  await uploadBlob(f, f.name||'audio.webm');
+};
+
+async function uploadBlob(blob, filename){
+  try{
+    const fd=new FormData();
     fd.append('audio', blob, filename);
-    fd.append('clinicKey', clinicKey);
-    const r = await fetch('/api/opd/upload-audio', { method:'POST', body: fd });
+    fd.append('clinicKey', $('clinic').value);
+    const r = await fetch('/api/opd/upload-audio',{ method:'POST', body: fd });
     const d = await r.json();
-    if(!d.ok) throw new Error(d.error||'error');
-    $('outTrans').textContent = d.transcript || '(ไม่มีข้อความ)';
-    $('outSum').textContent = d.summary || '(ยังไม่มีสรุป)';
+    if(!d.ok) throw new Error(d.message||d.error||'upload failed');
+    $('transcript').value = d.transcript || '';
+    $('opdOut').value = d.summary || '';
+    $('doneBadge').style.display='inline-flex';
+    setChip('สรุปสำเร็จ', true);
   }catch(e){
-    $('outTrans').textContent = '❌ อัปโหลดล้มเหลว: ' + (e.message||e);
+    $('doneBadge').style.display='none';
+    setChip('อัปโหลดล้มเหลว', false);
+    alert('อัปโหลดล้มเหลว: '+(e.message||e));
   }
 }
 
-$('btnUploadFile').onclick = async ()=>{
-  const f = $('audio').files[0];
-  if(!f) return alert('กรุณาเลือกไฟล์เสียงก่อน');
-  audioPreview.src = URL.createObjectURL(f); audioPreview.style.display='block';
-  $('outTrans').textContent='กำลังอัปโหลดและถอดเสียง...'; $('outSum').textContent='';
-  await uploadBlobAndSummarize(f, f.name || 'audio.webm');
-};
+/* ---------- Summaries from text ---------- */
+$('btnSumm').onclick = ()=>summarize(false);
+$('btnSummDeep').onclick = ()=>summarize(true);
 
-// 3) Follow-up
-$('btnFU').onclick = async () => {
-  const clinicKey = $('clinic3').value;
-  const riskLevel = $('risk').value;
-  const contextText = $('ctx').value.trim();
-  $('outFUJson').textContent='กำลังสร้างแผน...'; $('outFUMd').textContent='';
+async function summarize(deep=false){
+  const text = $('transcript').value.trim();
+  if(!text) return alert('ยังไม่มีข้อความสำหรับสรุป');
+  $('opdOut').value = 'กำลังสรุป...';
   try{
-    const r = await fetch('/api/followup/from-text', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ clinicKey, riskLevel, contextText })
+    const body = { rawText: text, clinicKey: $('clinic').value };
+    if(deep) body.forceModel = 'o3'; // server จะลอง o3 -> 4.1 -> 4o-mini
+    const r = await fetch('/api/opd/from-text', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)
     });
     const d = await r.json();
-    if(!d.ok) throw new Error(d.error||'error');
-    $('outFUJson').textContent = JSON.stringify(d.structured, null, 2);
-    $('outFUMd').textContent = d.markdown || '';
-  }catch(e){ $('outFUJson').textContent='เกิดข้อผิดพลาด'; }
-};
-$('btnClearFU').onclick = ()=>{ $('ctx').value=''; $('outFUJson').textContent=''; $('outFUMd').textContent=''; };
+    if(!d.ok) throw new Error(d.message||d.error||'summarization failed');
+    $('opdOut').value = d.summary || '';
+    $('doneBadge').style.display='inline-flex';
+    setChip(`สรุปสำเร็จ (${d.model_used||'auto'})`, true);
+  }catch(e){
+    $('opdOut').value = '❌ ล้มเหลว: ' + (e.message||e);
+    setChip('สรุปล้มเหลว', false);
+  }
+}
+
+/* ---------- Utilities ---------- */
+$('btnCopy').onclick=()=>{ navigator.clipboard.writeText($('opdOut').value||''); };
+$('btnSave').onclick=()=>{ saveText('opd_card.txt', $('opdOut').value||''); };
+$('btnClearTranscript').onclick=()=>{ $('transcript').value=''; };
+
+loadMics();
 </script>
 </body>
 </html>
