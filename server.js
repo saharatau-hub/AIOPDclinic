@@ -58,7 +58,6 @@ if (BASIC_USER && BASIC_PASS) {
 const upload = multer({ storage: multer.memoryStorage() });
 
 // -------- Clinic Templates (ไม่จำเพาะโรค) --------
-// -------- Clinic Templates (ไม่จำเพาะโรค) --------
 const CLINICS = {
   neuromed: {
     name: 'Neurology Medicine',
@@ -137,7 +136,7 @@ const CLINICS = {
   }
 };
 
-// -------- Helpers --------
+// -------- Helper Functions --------
 function buildThaiPrompt(rawText, clinicKey = 'neuromed') {
   const c = CLINICS[clinicKey] || CLINICS.neuromed;
   return `
@@ -177,6 +176,7 @@ function buildFollowupTemplate(clinicKey = 'neuromed', contextText = '', riskLev
     telemed_ok: !!f.tele
   };
 }
+
 function renderFollowupMarkdown(fp) {
   const A = (x) => (Array.isArray(x) ? x : []).filter(Boolean);
   const out = [];
@@ -184,13 +184,13 @@ function renderFollowupMarkdown(fp) {
   out.push(`- ระดับความเสี่ยง: **${fp.risk_level.toUpperCase()}**`);
   out.push(`- นัดติดตามใน: **${fp.follow_up_window_days} วัน**`);
   if (fp.context_brief) out.push(`- บริบท: ${fp.context_brief}`);
-  if (A(fp.tests_to_order).length){ out.push(`\n**Tests/Labs:**`); A(fp.tests_to_order).forEach(v=>out.push(`- ${v}`)); }
-  if (A(fp.imaging_or_procedures).length){ out.push(`\n**Imaging/Procedures:**`); A(fp.imaging_or_procedures).forEach(v=>out.push(`- ${v}`)); }
-  if (A(fp.medication_actions).length){ out.push(`\n**การจัดการยา:**`); A(fp.medication_actions).forEach(v=>out.push(`- ${v}`)); }
-  if (A(fp.counseling_points).length){ out.push(`\n**ประเด็นให้คำแนะนำผู้ป่วย:**`); A(fp.counseling_points).forEach(v=>out.push(`- ${v}`)); }
-  if (A(fp.monitoring_params).length){ out.push(`\n**ตัวแปรที่ต้องติดตาม:**`); A(fp.monitoring_params).forEach(v=>out.push(`- ${v}`)); }
-  if (A(fp.red_flags_for_early_return).length){ out.push(`\n**Red flags กลับมาพบแพทย์ก่อนนัด:**`); A(fp.red_flags_for_early_return).forEach(v=>out.push(`- ${v}`)); }
-  if (A(fp.referral_or_multidisciplinary).length){ out.push(`\n**ทีมสหสาขา/ส่งต่อ:**`); A(fp.referral_or_multidisciplinary).forEach(v=>out.push(`- ${v}`)); }
+  if (A(fp.tests_to_order).length) { out.push(`\n**Tests/Labs:**`); A(fp.tests_to_order).forEach(v => out.push(`- ${v}`)); }
+  if (A(fp.imaging_or_procedures).length) { out.push(`\n**Imaging/Procedures:**`); A(fp.imaging_or_procedures).forEach(v => out.push(`- ${v}`)); }
+  if (A(fp.medication_actions).length) { out.push(`\n**การจัดการยา:**`); A(fp.medication_actions).forEach(v => out.push(`- ${v}`)); }
+  if (A(fp.counseling_points).length) { out.push(`\n**ประเด็นให้คำแนะนำผู้ป่วย:**`); A(fp.counseling_points).forEach(v => out.push(`- ${v}`)); }
+  if (A(fp.monitoring_params).length) { out.push(`\n**ตัวแปรที่ต้องติดตาม:**`); A(fp.monitoring_params).forEach(v => out.push(`- ${v}`)); }
+  if (A(fp.red_flags_for_early_return).length) { out.push(`\n**Red flags กลับมาพบแพทย์ก่อนนัด:**`); A(fp.red_flags_for_early_return).forEach(v => out.push(`- ${v}`)); }
+  if (A(fp.referral_or_multidisciplinary).length) { out.push(`\n**ทีมสหสาขา/ส่งต่อ:**`); A(fp.referral_or_multidisciplinary).forEach(v => out.push(`- ${v}`)); }
   out.push(`\n**Telemedicine:** ${fp.telemed_ok ? 'เหมาะสม (OK)' : 'ไม่เหมาะสม'}`);
   return out.join('\n');
 }
@@ -230,4 +230,4 @@ app.post('/api/opd/upload-audio', upload.single('audio'), async (req, res) => {
     if (!text) return res.status(500).json({ ok: false, error: 'transcription empty' });
 
     const prompt = buildThaiPrompt(text, clinicKey);
-    const resp = await openai.responses.create({ model: OPENAI_MODEL, input: prompt, t
+    const resp = await o
