@@ -1,10 +1,10 @@
 /**
  * Tech Tool OPD Card + Follow-up (Clinic Templates)
- * Node 20+ (รองรับ File/Blob) | Express API + Static UI
+ * Node 20+
  *
- * ENV ตัวอย่าง (.env):
+ * ENV ตัวอย่าง (.env)
  *   OPENAI_API_KEY=sk-...
- *   OPENAI_MODEL=o1-mini
+ *   OPENAI_MODEL=gpt-4o-mini
  *   TRANSCRIBE_MODEL=gpt-4o-mini-transcribe
  *   BASIC_USER=admin
  *   BASIC_PASS=1234
@@ -32,13 +32,13 @@ const BASIC_PASS = process.env.BASIC_PASS || '';
 const app = express();
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// -------- Security / Middleware --------
+// ---------- Middleware ----------
 app.disable('x-powered-by');
 app.use(express.json({ limit: '3mb' }));
 app.use(cors());
 app.use(rateLimit({ windowMs: 60_000, max: 60 }));
 
-// Basic Auth (ยกเว้น healthz และไฟล์สาธารณะ)
+// ---------- Basic Auth ----------
 if (BASIC_USER && BASIC_PASS) {
   app.use((req, res, next) => {
     if (req.path.startsWith('/api/healthz') || req.path.startsWith('/public')) return next();
@@ -54,10 +54,9 @@ if (BASIC_USER && BASIC_PASS) {
   });
 }
 
-// Upload (memory)
 const upload = multer({ storage: multer.memoryStorage() });
 
-// -------- Clinic Templates (ไม่จำเพาะโรค) --------
+// ---------- Clinic Templates ----------
 const CLINICS = {
   neuromed: {
     name: 'Neurology Medicine',
@@ -66,192 +65,175 @@ const CLINICS = {
       tests: ['CBC/CMP (ถ้าปรับยาใหม่)', 'FBS/HbA1c (ถ้ามี DM)', 'Lipid profile (ตามจำเป็น)'],
       imaging: ['MRI/CT ตามอาการและข้อบ่งชี้'],
       meds: ['ทบทวน adherence/AE ของยา neuro', 'ปรับยาเฉพาะตามอาการ'],
-      counsel: ['สังเกต red flags ทางระบบประสาท', 'ป้องกันหกล้ม', 'นอน/โภชนาการ/ออกกำลังกาย'],
-      monitor: ['อาการเด่น, การเดิน, คำพูด'],
-      red: ['อ่อนแรง/ชาฉับพลัน', 'พูดลำบาก/ตามัวเฉียบพลัน', 'ชักต่อเนื่อง'],
-      team: ['Rehab/PT/OT ตามจำเป็น'],
+      counsel: ['สังเกต red flags ทางระบบประสาท', 'ป้องกันหกล้ม', 'นอน โภชนาการ ออกกำลังกาย'],
+      monitor: ['อาการเด่น การเดิน คำพูด'],
+      red: ['อ่อนแรง ชาฉับพลัน', 'พูดลำบาก ตามัวเฉียบพลัน', 'ชักต่อเนื่อง'],
+      team: ['Rehab PT OT ตามจำเป็น'],
       tele: true
     },
-    promptHint: `เน้นสรุปอาการระบบประสาท, ตรวจโฟกัส CN/มอเตอร์/เซนซอรี/การเดิน และแผนติดตามที่จำเป็น`
+    promptHint: `เน้นสรุปอาการระบบประสาท ตรวจโฟกัส CN มอเตอร์ เซนซอรี การเดิน และแผนติดตามที่จำเป็น`
   },
   neurosx: {
     name: 'Neurosurgery',
     followup: {
       default_window_days: 14,
       tests: ['CBC (post-op ถ้าจำเป็น)', 'Electrolytes (ถ้าสงสัย SIADH/DI)'],
-      imaging: ['CT/MRI follow-up ตามชนิดผ่าตัด/ภาวะเลือดออก/มวลก้อน'],
-      meds: ['Pain control', 'Antibiotics (ตามแผลผ่าตัด)', 'DVT prophylaxis (ตามข้อบ่งชี้)'],
+      imaging: ['CT/MRI follow-up ตามชนิดผ่าตัด'],
+      meds: ['Pain control', 'Antibiotics', 'DVT prophylaxis'],
       counsel: ['การดูแลแผลและสังเกตติดเชื้อ', 'ข้อจำกัดกิจกรรม'],
-      monitor: ['ไข้/ปวดแผล/แผลบวมแดง', 'Neurologic status baseline'],
-      red: ['แผลมีหนอง/บวมแดงมาก', 'ปวดศีรษะรุนแรงผิดปกติ', 'ซึมลง/ชัก'],
-      team: ['Neuro ICU/Functional team ตามเคส'],
+      monitor: ['ไข้ ปวดแผล แผลบวมแดง', 'Neurologic status baseline'],
+      red: ['แผลมีหนอง', 'ปวดศีรษะรุนแรง', 'ซึมลง ชัก'],
+      team: ['Neuro ICU Functional team'],
       tele: false
     },
-    promptHint: `เพิ่มหัวข้อภาวะหลังผ่าตัด/การดูแลแผล/คำแนะนำก่อนกลับบ้าน และ red flags`
+    promptHint: `เพิ่มหัวข้อภาวะหลังผ่าตัด การดูแลแผล คำแนะนำกลับบ้าน และ red flags`
   },
   rehab: {
-    name: 'Physical Medicine & Rehabilitation',
+    name: 'Rehabilitation',
     followup: {
       default_window_days: 21,
-      tests: ['Spasticity assessment scale (ถ้าจำเป็น)'],
-      imaging: [],
-      meds: ['ปรับ antispastic agents/analgesics ตามเป้าหมายฟื้นฟู'],
-      counsel: ['โปรแกรม PT/OT/SLT ที่บ้าน', 'ป้องกันหกล้ม/แผลกดทับ'],
-      monitor: ['Goal-attainment diary', 'Pain/fatigue scale'],
-      red: ['ปวดมากผิดปกติ', 'เกิดแผลกดทับ', 'ล้มถี่ขึ้น'],
-      team: ['PT/OT/SLT/Nutrition'],
+      tests: ['Spasticity assessment (ถ้าจำเป็น)'],
+      meds: ['ปรับ antispastic agents analgesics'],
+      counsel: ['โปรแกรม PT OT SLT ที่บ้าน', 'ป้องกันหกล้ม แผลกดทับ'],
+      monitor: ['Goal attainment Pain scale'],
+      red: ['ปวดมากผิดปกติ', 'แผลกดทับ', 'ล้มถี่ขึ้น'],
+      team: ['PT OT SLT Nutrition'],
       tele: true
     },
-    promptHint: `เน้นเป้าหมายฟังก์ชัน, โปรแกรม PT/OT/SLT, อุปกรณ์ช่วยเดิน/ADL และตัวชี้วัดความก้าวหน้า`
+    promptHint: `เน้นเป้าหมายฟังก์ชัน โปรแกรม PT OT SLT อุปกรณ์ช่วยเดิน ADL`
   },
   psych: {
     name: 'Psychiatry',
     followup: {
       default_window_days: 28,
       tests: ['CBC/CMP (ถ้าปรับยาเมตาบอลิก)', 'Lipid/Glucose (ถ้าใช้ SGA)'],
-      imaging: [],
-      meds: ['ปรับ SSRIs/SNRIs/SGA ตามอาการและผลข้างเคียง', 'ตรวจ drug–interaction'],
-      counsel: ['สัญญาณเตือนซึมเศร้ารุนแรง/คิดทำร้ายตนเอง', 'การนอน/การจัดการความเครียด'],
-      monitor: ['PHQ-9 / GAD-7 / อื่น ๆ', 'Side-effect checklist'],
-      red: ['มีความคิดทำร้ายตนเอง/ผู้อื่น', 'สับสนเฉียบพลัน', 'EPS รุนแรง'],
-      team: ['Psychology / Social Work / Family meeting'],
+      meds: ['ปรับ SSRIs/SNRIs/SGA', 'ตรวจ drug interaction'],
+      counsel: ['สัญญาณเตือนซึมเศร้ารุนแรง', 'การนอน การจัดการความเครียด'],
+      monitor: ['PHQ-9 GAD-7', 'Side-effect checklist'],
+      red: ['คิดทำร้ายตนเอง/ผู้อื่น', 'สับสนเฉียบพลัน', 'EPS รุนแรง'],
+      team: ['Psychology Social Work Family'],
       tele: true
     },
-    promptHint: `สรุปอารมณ์/ความคิด/พฤติกรรม ประเมินความปลอดภัย และแผนติดตามยาแบบปฏิบัติได้`
+    promptHint: `สรุปอารมณ์ ความคิด พฤติกรรม ประเมินความปลอดภัย และแผนติดตามยา`
   },
   oph: {
     name: 'Ophthalmology',
     followup: {
       default_window_days: 14,
-      tests: ['Visual acuity', 'Color vision', 'IOP', 'OCT/Visual field (ถ้าจำเป็น)'],
-      imaging: [],
-      meds: ['ปรับตารางหยอดตา/สเตียรอยด์ตา/ยาลดความดันตา ตามข้อบ่งชี้'],
-      counsel: ['เทคนิคหยอดตาที่ถูกต้อง', 'หลีกเลี่ยงการขยี้ตา/สิ่งระคายเคือง'],
-      monitor: ['ปวดตา/ตามัว/เห็นแสงแฟลช'],
-      red: ['ปวดตารุนแรง', 'สายตาลดลงเฉียบพลัน', 'ตาแดงมาก/ขี้ตาเยอะผิดปกติ'],
-      team: ['Neuro-ophthalmology (ถ้าสงสัยเกี่ยวข้องระบบประสาท)'],
+      tests: ['Visual acuity', 'IOP', 'OCT/Visual field'],
+      meds: ['ปรับตารางหยอดตา ยาลดความดันตา'],
+      counsel: ['เทคนิคหยอดตา', 'หลีกเลี่ยงขยี้ตา'],
+      monitor: ['ปวดตา ตามัว แสงแฟลช'],
+      red: ['ปวดตารุนแรง', 'สายตาลดเฉียบพลัน', 'ตาแดงมาก'],
+      team: ['Neuro-ophthalmology'],
       tele: true
     },
-    promptHint: `ระบุ VA/IOP/สี/field (ถ้ามี) และเน้นคำแนะนำการใช้ยาหยอดตา`
+    promptHint: `ระบุ VA IOP สี field และเน้นคำแนะนำการใช้ยาหยอดตา`
   }
 };
 
-// -------- Helper Functions --------
-function buildThaiPrompt(rawText, clinicKey = 'neuromed') {
+// ---------- Helper ----------
+function buildThaiPrompt(text, clinicKey = 'neuromed') {
   const c = CLINICS[clinicKey] || CLINICS.neuromed;
   return `
 คุณเป็นแพทย์ในคลินิก ${c.name}
-สรุป "OPD Card ภาษาไทย" จากข้อความต่อไปนี้ เป็นหัวข้อชัดเจน อ่านง่าย กระชับ:
+สรุป "OPD Card ภาษาไทย" จากข้อความต่อไปนี้ ให้สั้น ครบ เข้าใจง่าย:
 - Chief Complaint
-- Present Illness (+ ROS ถ้ามี)
-- Past History / Meds / Allergy / Risk (ถ้ามี)
-- Physical Examination (โฟกัสตามคลินิก)
-- Assessment: Working Dx / DDX / เหตุผลสั้น ๆ
-- Plan: Investigation / Treatment (Rx) / Advice & Follow-up
-
-แนวทางเฉพาะคลินิก:
-${c.promptHint}
+- Present Illness
+- Past History / Meds / Allergy
+- Physical Exam (เฉพาะจุดสำคัญ)
+- Assessment + Plan
+แนวทางเฉพาะคลินิก: ${c.promptHint}
 
 --- ข้อความดิบ ---
-${String(rawText || '').trim()}
+${text.trim()}
 `.trim();
 }
 
-function buildFollowupTemplate(clinicKey = 'neuromed', contextText = '', riskLevel = 'routine') {
+function buildFollowupTemplate(clinicKey, ctx = '', risk = 'routine') {
   const f = CLINICS[clinicKey]?.followup || CLINICS.neuromed.followup;
-  const days = f.default_window_days + (riskLevel === 'high' ? -7 : riskLevel === 'urgent' ? -3 : 0);
+  const days = f.default_window_days + (risk === 'high' ? -7 : risk === 'urgent' ? -3 : 0);
   return {
-    clinic_key: clinicKey,
-    clinic_name: CLINICS[clinicKey]?.name || CLINICS.neuromed.name,
-    risk_level: riskLevel,
-    follow_up_window_days: Math.max(3, days),
-    context_brief: String(contextText || '').trim().slice(0, 600),
-    tests_to_order: [...f.tests],
-    imaging_or_procedures: [...(f.imaging || [])],
-    medication_actions: [...f.meds],
-    counseling_points: [...f.counsel],
-    monitoring_params: [...f.monitor],
-    red_flags_for_early_return: [...f.red],
-    referral_or_multidisciplinary: [...f.team],
-    telemed_ok: !!f.tele
+    clinic: CLINICS[clinicKey]?.name || 'Neurology',
+    risk,
+    days,
+    context: ctx,
+    tests: f.tests,
+    imaging: f.imaging || [],
+    meds: f.meds,
+    counsel: f.counsel,
+    monitor: f.monitor,
+    red: f.red,
+    team: f.team,
+    tele: f.tele
   };
 }
 
-function renderFollowupMarkdown(fp) {
-  const A = (x) => (Array.isArray(x) ? x : []).filter(Boolean);
-  const out = [];
-  out.push(`**แผนติดตาม (${fp.clinic_name})**`);
-  out.push(`- ระดับความเสี่ยง: **${fp.risk_level.toUpperCase()}**`);
-  out.push(`- นัดติดตามใน: **${fp.follow_up_window_days} วัน**`);
-  if (fp.context_brief) out.push(`- บริบท: ${fp.context_brief}`);
-  if (A(fp.tests_to_order).length) { out.push(`\n**Tests/Labs:**`); A(fp.tests_to_order).forEach(v => out.push(`- ${v}`)); }
-  if (A(fp.imaging_or_procedures).length) { out.push(`\n**Imaging/Procedures:**`); A(fp.imaging_or_procedures).forEach(v => out.push(`- ${v}`)); }
-  if (A(fp.medication_actions).length) { out.push(`\n**การจัดการยา:**`); A(fp.medication_actions).forEach(v => out.push(`- ${v}`)); }
-  if (A(fp.counseling_points).length) { out.push(`\n**ประเด็นให้คำแนะนำผู้ป่วย:**`); A(fp.counseling_points).forEach(v => out.push(`- ${v}`)); }
-  if (A(fp.monitoring_params).length) { out.push(`\n**ตัวแปรที่ต้องติดตาม:**`); A(fp.monitoring_params).forEach(v => out.push(`- ${v}`)); }
-  if (A(fp.red_flags_for_early_return).length) { out.push(`\n**Red flags กลับมาพบแพทย์ก่อนนัด:**`); A(fp.red_flags_for_early_return).forEach(v => out.push(`- ${v}`)); }
-  if (A(fp.referral_or_multidisciplinary).length) { out.push(`\n**ทีมสหสาขา/ส่งต่อ:**`); A(fp.referral_or_multidisciplinary).forEach(v => out.push(`- ${v}`)); }
-  out.push(`\n**Telemedicine:** ${fp.telemed_ok ? 'เหมาะสม (OK)' : 'ไม่เหมาะสม'}`);
-  return out.join('\n');
-}
+// ---------- Routes ----------
+app.get('/api/healthz', (_, r) => r.json({ ok: true, time: new Date().toISOString() }));
+app.get('/api/debug/env', (_, r) => r.json({
+  ok: true,
+  node: process.version,
+  model: OPENAI_MODEL,
+  has_api_key: !!process.env.OPENAI_API_KEY
+}));
 
-// -------- Routes --------
-app.get('/api/healthz', (_, res) => res.json({ ok: true, time: new Date().toISOString() }));
-
-// สรุปจากข้อความ
+// summarize from text with fallback
 app.post('/api/opd/from-text', async (req, res) => {
-  try {
-    const { rawText = '', clinicKey = 'neuromed' } = req.body || {};
-    if (!rawText.trim()) return res.status(400).json({ ok: false, error: 'rawText required' });
-    const prompt = buildThaiPrompt(rawText, clinicKey);
-    const resp = await openai.responses.create({ model: OPENAI_MODEL, input: prompt, temperature: 0.2 });
-    const summary = resp.output_text?.trim?.() || resp?.content?.[0]?.text?.trim?.() || '';
-    res.json({ ok: true, clinicKey, summary });
-  } catch {
-    res.status(500).json({ ok: false, error: 'summarization failed' });
+  const { rawText = '', clinicKey = 'neuromed' } = req.body || {};
+  if (!rawText.trim()) return res.status(400).json({ ok: false, error: 'no text' });
+  const prompt = buildThaiPrompt(rawText, clinicKey);
+  const models = [OPENAI_MODEL, 'gpt-4o-mini', 'gpt-4o'];
+
+  let lastErr;
+  for (const m of models) {
+    try {
+      const r = await openai.responses.create({ model: m, input: prompt, temperature: 0.2 });
+      const out = r.output_text?.trim?.() || r?.content?.[0]?.text?.trim?.() || '';
+      if (out) return res.json({ ok: true, clinicKey, model_used: m, summary: out });
+    } catch (e) {
+      lastErr = e;
+      console.error('[from-text]', m, e?.status, e?.message);
+      if (e?.status === 401) break;
+    }
   }
+  res.status(500).json({ ok: false, error: 'summarization failed', message: lastErr?.message });
 });
 
-// อัปโหลดเสียง -> ถอดเสียง -> สรุป
+// upload audio
 app.post('/api/opd/upload-audio', upload.single('audio'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ ok: false, error: 'no file' });
-    const { clinicKey = 'neuromed' } = req.body || {};
-    const file = new File([req.file.buffer], req.file.originalname || 'audio.webm', { type: req.file.mimetype || 'audio/webm' });
+    const { clinicKey = 'neuromed' } = req.body;
+    const f = new File([req.file.buffer], req.file.originalname || 'audio.webm', { type: req.file.mimetype || 'audio/webm' });
 
     let text = '';
     try {
-      const tr = await openai.audio.transcriptions.create({ file, model: TRANSCRIBE_MODEL, language: 'th' });
+      const tr = await openai.audio.transcriptions.create({ file: f, model: TRANSCRIBE_MODEL, language: 'th' });
       text = tr?.text?.trim?.() || '';
     } catch {
-      const tr = await openai.audio.transcriptions.create({ file, model: 'whisper-1', language: 'th' });
+      const tr = await openai.audio.transcriptions.create({ file: f, model: 'whisper-1', language: 'th' });
       text = tr?.text?.trim?.() || '';
     }
-    if (!text) return res.status(500).json({ ok: false, error: 'transcription empty' });
 
     const prompt = buildThaiPrompt(text, clinicKey);
-    const resp = await openai.responses.create({ model: OPENAI_MODEL, input: prompt, temperature: 0.2 });
-    const summary = resp.output_text?.trim?.() || resp?.content?.[0]?.text?.trim?.() || '';
-    res.json({ ok: true, clinicKey, transcript: text, summary });
-  } catch {
-    res.status(500).json({ ok: false, error: 'upload+transcribe failed' });
+    const r = await openai.responses.create({ model: OPENAI_MODEL, input: prompt, temperature: 0.2 });
+    const summary = r.output_text?.trim?.() || r?.content?.[0]?.text?.trim?.() || '';
+    res.json({ ok: true, transcript: text, summary });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: 'upload failed', message: e.message });
   }
 });
 
-// Follow-up ตามคลินิก (template ไม่จำเพาะโรค)
-app.post('/api/followup/from-text', async (req, res) => {
-  try {
-    const { clinicKey = 'neuromed', riskLevel = 'routine', contextText = '' } = req.body || {};
-    const plan = buildFollowupTemplate(clinicKey, contextText, riskLevel);
-    const markdown = renderFollowupMarkdown(plan);
-    res.json({ ok: true, structured: plan, markdown });
-  } catch {
-    res.status(500).json({ ok: false, error: 'follow-up generation failed' });
-  }
+// follow-up
+app.post('/api/followup/from-text', (req, res) => {
+  const { clinicKey = 'neuromed', contextText = '', riskLevel = 'routine' } = req.body;
+  const plan = buildFollowupTemplate(clinicKey, contextText, riskLevel);
+  res.json({ ok: true, structured: plan });
 });
 
-// Static UI
+// ---------- Static ----------
 app.use(express.static(path.join(__dirname, 'public')));
-app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.get('*', (_, r) => r.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 app.listen(PORT, () => console.log(`✅ Server running at http://localhost:${PORT}`));
