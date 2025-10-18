@@ -1,5 +1,5 @@
 /**
- * Tech Tool OPD Card + Follow-up (Clinic Templates)
+ * Tech Tool OPD Card + Follow-up + Coaching (Patient/Clinician/Deep Plan)
  * Node 20+
  *
  * ENV ตัวอย่าง (.env):
@@ -187,6 +187,58 @@ function renderFollowupMarkdown(fp) {
   return out.join('\n');
 }
 
+// ---------- Coaching Prompt ----------
+function buildCoachPrompt(rawText, clinicKey='neuromed'){
+  const clinic = CLINICS[clinicKey]?.name || 'Neurology';
+  const hint   = CLINICS[clinicKey]?.promptHint || '';
+  return `
+คุณเป็นแพทย์คลินิก ${clinic}.
+จากข้อมูลผู้ป่วยต่อไปนี้ จงสร้างผลลัพธ์ 3 ส่วนเป็นภาษาไทยดังนี้:
+[1] คำแนะนำผู้ป่วย (ง่าย เข้าใจเร็ว 8–12 ข้อ):
+- สิ่งที่ต้องทำทุกวัน/ทุกสัปดาห์
+- วิธีใช้ยา/อุปกรณ์ (ถ้ามี)
+- ข้อห้าม/ควรหลีกเลี่ยง
+- สัญญาณอันตรายที่ต้องกลับโรงพยาบาลทันที
+
+[2] คำแนะนำแพทย์ (เช็กลิสต์ 10–15 ข้อ):
+- Labs/Imaging + เงื่อนไข
+- ยา: เริ่ม/ปรับ/หยุด + เฝ้าระวัง AE
+- Non-Pharm/ทีมสหสาขา
+- เกณฑ์นัด/Telemedicine และ “ถ้า…ให้ทำ…”
+
+[3] แผนเชิงลึก (Today / 1 สัปดาห์ / 1 เดือน):
+- งาน/ผู้รับผิดชอบ/ตัวชี้วัด/วิธีบันทึก
+- เกณฑ์ความสำเร็จ
+
+รูปแบบเอาต์พุต JSON:
+{
+ "patient_advice_md": "markdown",
+ "clinician_brief_md": "markdown",
+ "deep_plan_md": "markdown",
+ "structured": {
+   "patient_tasks_daily": [ "..." ],
+   "patient_red_flags": [ "..." ],
+   "clinician_checklist": [ "..." ],
+   "timeline": {
+     "today":   [ {"task":"","owner":"","metric":""} ],
+     "week_1":  [ {"task":"","owner":"","metric":""} ],
+     "month_1": [ {"task":"","owner":"","metric":""} ]
+   }
+ }
+}
+
+บริบทผู้ป่วย:
+<<<
+${String(rawText||'').trim()}
+>>>
+
+ข้อเน้นเฉพาะคลินิก:
+${hint}
+
+ตอบเป็น JSON เท่านั้น และต้องครบทุกคีย์ตามแบบ
+`.trim();
+}
+
 // ---------- Routes ----------
 app.get('/api/healthz', (_, r) => r.json({ ok: true, time: new Date().toISOString() }));
 app.get('/api/debug/env', (_, r) => r.json({
@@ -196,7 +248,7 @@ app.get('/api/debug/env', (_, r) => r.json({
   has_api_key: !!process.env.OPENAI_API_KEY
 }));
 
-// summarize from text (supports forceModel:'o3')
+// summarize from text (supports forceModel:'o3' to try o3 -> gpt-4.1 -> 4o-mini)
 app.post('/api/opd/from-text', async (req, res) => {
   const { rawText = '', clinicKey = 'neuromed', forceModel } = req.body || {};
   if (!rawText.trim()) return res.status(400).json({ ok: false, error: 'no text' });
@@ -254,6 +306,43 @@ app.post('/api/followup/from-text', (req, res) => {
   const plan = buildFollowupTemplate(clinicKey, contextText, riskLevel);
   const markdown = renderFollowupMarkdown(plan);
   res.json({ ok: true, structured: plan, markdown });
+});
+
+// coaching (patient advice + clinician brief + deep plan)
+app.post('/api/coach', async (req, res) => {
+  const { rawText = '', clinicKey = 'neuromed', forceModel } = req.body || {};
+  if (!rawText.trim()) return res.status(400).json({ ok:false, error:'no text' });
+
+  const prompt = buildCoachPrompt(rawText, clinicKey);
+  const models = forceModel === 'o3'
+    ? ['o3', 'gpt-4.1', 'gpt-4o-mini']
+    : [OPENAI_MODEL, 'gpt-4.1', 'gpt-4o-mini'].filter(Boolean);
+
+  let lastErr;
+  for (const m of models) {
+    try {
+      const r = await openai.responses.create({ model: m, input: prompt, temperature: 0.2 });
+      const text = r.output_text?.trim?.() || r?.content?.[0]?.text?.trim?.() || '';
+      const json = JSON.parse(text);
+      return res.json({ ok:true, model_used:m, ...json });
+    } catch (e) {
+      lastErr = e;
+      console.error('[coach]', m, e?.status, e?.message);
+      // ถ้า parse JSON ไม่ผ่าน อาจเป็นเพราะโมเดลส่ง markdown หุ้มโค้ดมา ลองลอก ``` ออกแบบหยาบ ๆ
+      if (e instanceof SyntaxError && lastErr && typeof lastErr === 'object') {
+        try {
+          const txt = (lastErr.output_text || '').replace(/```json|```/g,'').trim();
+          if (txt) {
+            const j = JSON.parse(txt);
+            return res.json({ ok:true, model_used:m, ...j });
+          }
+        } catch {/* ignore */}
+      }
+      // ลองโมเดลถัดไป
+      continue;
+    }
+  }
+  res.status(500).json({ ok:false, error:'coach failed', message:lastErr?.message });
 });
 
 // ---------- Static ----------
