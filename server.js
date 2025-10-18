@@ -24,7 +24,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 3001;
-const OPENAI_MODEL = process.env.OPENAI_MODEL || 'o1-mini';
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 const TRANSCRIBE_MODEL = process.env.TRANSCRIBE_MODEL || 'gpt-4o-mini-transcribe';
 const BASIC_USER = process.env.BASIC_USER || '';
 const BASIC_PASS = process.env.BASIC_PASS || '';
