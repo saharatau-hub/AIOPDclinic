@@ -72,7 +72,7 @@ const CLINICS = {
       team: ['Rehab/PT/OT ตามจำเป็น'],
       tele: true
     },
-    promptHint: เน้นสรุปอาการระบบประสาท, ตรวจโฟกัส CN/มอเตอร์/เซนซอรี/การเดิน และแผนติดตามที่จำเป็น
+    promptHint: `เน้นสรุปอาการระบบประสาท, ตรวจโฟกัส CN/มอเตอร์/เซนซอรี/การเดิน และแผนติดตามที่จำเป็น`
   },
   neurosx: {
     name: 'Neurosurgery',
@@ -87,7 +87,7 @@ const CLINICS = {
       team: ['Neuro ICU/Functional team ตามเคส'],
       tele: false
     },
-    promptHint: เพิ่มหัวข้อภาวะหลังผ่าตัด/การดูแลแผล/คำแนะนำก่อนกลับบ้าน และ red flags
+    promptHint: `เพิ่มหัวข้อภาวะหลังผ่าตัด/การดูแลแผล/คำแนะนำก่อนกลับบ้าน และ red flags`
   },
   rehab: {
     name: 'Physical Medicine & Rehabilitation',
@@ -102,7 +102,7 @@ const CLINICS = {
       team: ['PT/OT/SLT/Nutrition'],
       tele: true
     },
-    promptHint: เน้นเป้าหมายฟังก์ชัน, โปรแกรม PT/OT/SLT, อุปกรณ์ช่วยเดิน/ADL และตัวชี้วัดความก้าวหน้า
+    promptHint: `เน้นเป้าหมายฟังก์ชัน, โปรแกรม PT/OT/SLT, อุปกรณ์ช่วยเดิน/ADL และตัวชี้วัดความก้าวหน้า`
   },
   psych: {
     name: 'Psychiatry',
@@ -117,7 +117,7 @@ const CLINICS = {
       team: ['Psychology / Social Work / Family meeting'],
       tele: true
     },
-    promptHint: สรุปอารมณ์/ความคิด/พฤติกรรม ประเมินความปลอดภัย และแผนติดตามยาแบบปฏิบัติได้
+    promptHint: `สรุปอารมณ์/ความคิด/พฤติกรรม ประเมินความปลอดภัย และแผนติดตามยาแบบปฏิบัติได้`
   },
   oph: {
     name: 'Ophthalmology',
@@ -132,7 +132,7 @@ const CLINICS = {
       team: ['Neuro-ophthalmology (ถ้าสงสัยเกี่ยวข้องระบบประสาท)'],
       tele: true
     },
-    promptHint: ระบุ VA/IOP/สี/field (ถ้ามี) และเน้นคำแนะนำการใช้ยาหยอดตา
+    promptHint: `ระบุ VA/IOP/สี/field (ถ้ามี) และเน้นคำแนะนำการใช้ยาหยอดตา`
   }
 };
 
@@ -230,4 +230,28 @@ app.post('/api/opd/upload-audio', upload.single('audio'), async (req, res) => {
     if (!text) return res.status(500).json({ ok: false, error: 'transcription empty' });
 
     const prompt = buildThaiPrompt(text, clinicKey);
-    const resp = await o
+    const resp = await openai.responses.create({ model: OPENAI_MODEL, input: prompt, temperature: 0.2 });
+    const summary = resp.output_text?.trim?.() || resp?.content?.[0]?.text?.trim?.() || '';
+    res.json({ ok: true, clinicKey, transcript: text, summary });
+  } catch {
+    res.status(500).json({ ok: false, error: 'upload+transcribe failed' });
+  }
+});
+
+// Follow-up ตามคลินิก (template ไม่จำเพาะโรค)
+app.post('/api/followup/from-text', async (req, res) => {
+  try {
+    const { clinicKey = 'neuromed', riskLevel = 'routine', contextText = '' } = req.body || {};
+    const plan = buildFollowupTemplate(clinicKey, contextText, riskLevel);
+    const markdown = renderFollowupMarkdown(plan);
+    res.json({ ok: true, structured: plan, markdown });
+  } catch {
+    res.status(500).json({ ok: false, error: 'follow-up generation failed' });
+  }
+});
+
+// Static UI
+app.use(express.static(path.join(__dirname, 'public')));
+app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+
+app.listen(PORT, () => console.log(`✅ Server running at http://localhost:${PORT}`));
