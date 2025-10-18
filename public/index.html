@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Transkriptor → OPD Card (Web)</title>
+<style>
+  :root{
+    --bg:#ffffff; --fg:#111; --muted:#666; --pri:#1668e3; --pri2:#0d4fb3; --ok:#1b9e4b; --warn:#c97a00; --err:#c62828; --bd:#e7e7e7;
+  }
+  html,body{margin:0; padding:0; background:var(--bg); color:var(--fg); font:14px/1.45 system-ui, Segoe UI, Arial, sans-serif;}
+  .wrap{max-width:980px; margin:24px auto; padding:0 16px 48px;}
+  h1{font-size:22px; margin:0 0 16px;}
+  h2{font-size:18px; margin:24px 0 8px;}
+  .row{display:flex; gap:12px; align-items:center; flex-wrap:wrap}
+  .card{border:1px solid var(--bd); border-radius:10px; padding:16px; background:#fff; box-shadow:0 1px 0 rgba(0,0,0,02)}
+  label{font-weight:600}
+  select, input[type=file], button{font:inherit}
+  select{padding:8px 10px; border:1px solid var(--bd); border-radius:8px; background:#fff}
+  button{padding:9px 14px; border:0; border-radius:10px; background:var(--pri); color:#fff; cursor:pointer}
+  button.secondary{background:#f3f5f8; color:#222; border:1px solid var(--bd)}
+  button.danger{background:var(--err)}
+  button:disabled{opacity:.6; cursor:not-allowed}
+  .muted{color:var(--muted)}
+  .meter{height:8px; background:#f2f4f7; border-radius:6px; overflow:hidden; width:220px; border:1px solid var(--bd)}
+  .meter > b{display:block; height:100%; width:0%; background:linear-gradient(90deg,#7cb0ff,#2d6cff)}
+  textarea{width:100%; min-height:140px; resize:vertical; padding:12px; border:1px solid var(--bd); border-radius:10px; font:13px/1.55 ui-monospace, Menlo, Consolas, monospace}
+  .two{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+  @media (max-width:860px){ .two{grid-template-columns:1fr} }
+  .tag{display:inline-block; padding:3px 8px; border-radius:999px; font-size:12px; border:1px solid var(--bd); background:#fafbff; margin-left:6px}
+  .status{margin-left:8px}
+  .pill{padding:3px 8px; border-radius:999px; font-size:12px}
+  .ok{background:#e9f7ef; color:#0c7a38}
+  .warn{background:#fff5e6; color:#9a6100}
+  .err{background:#fdebec; color:#b02a37}
+  .toolbar{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  .right{margin-left:auto}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Transkriptor → OPD Card (Desktop)</h1>
+
+  <div class="card">
+    <div class="row">
+      <label>ไมโครโฟน</label>
+      <select id="micSelect"></select>
+      <div class="meter"><b id="vu" style="width:0%"></b></div>
+      <span id="timer" class="tag">00:00</span>
+      <select id="template" class="right">
+        <option>อายุรกรรม</option>
+        <option>ประสาทวิทยา</option>
+        <option>SOAP-กายภาพ</option>
+        <option>ศัลยกรรมประสาท</option>
+        <option>จักษุ</option>
+        <option selected>ทั่วไป</option>
+      </select>
+      <button id="recStart">เริ่มบันทึกเสียง</button>
+      <button id="recStop" class="danger" disabled>หยุด</button>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <input id="file" type="file" accept="audio/*" />
+      <button id="sendAudio">ส่งไฟล์ขึ้นเซิร์ฟเวอร์</button>
+      <small id="status" class="status muted">พร้อม</small>
+    </div>
+  </div>
+
+  <div class="two" style="margin-top:16px">
+    <div class="card">
+      <div class="toolbar">
+        <h2>Transcript (ข้อความถอดเสียง) <small id="transLen" class="muted" style="display:none"></small></h2>
+        <button id="clearTrans" class="secondary right">ล้าง</button>
+      </div>
+      <textarea id="transcript" placeholder="ข้อความจากการถอดเสียงจะอยู่ที่นี่  หรือวางข้อความเองได้"></textarea>
+      <div class="toolbar">
+        <button id="summarize">สรุปเป็น OPD Card</button>
+        <small class="muted">หรือพิมพ์/วางข้อความเอง แล้วกดสรุปได้เลย</small>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <h2>ผลลัพธ์ OPD Card</h2>
+        <button id="copy" class="secondary right">Copy</button>
+        <button id="save" class="secondary">Save .txt</button>
+      </div>
+      <textarea id="result" placeholder="ผลสรุปจะปรากฏที่นี่…"></textarea>
+      <small id="summaryInfo" class="muted"></small>
+    </div>
+  </div>
+
+  <div class="footer">
+    <small>เคล็ดลับ: ถ้าเสียงยาวมาก แนะนำอัดเป็น .m4a หรือ .webm จะอัปโหลดได้ไวกว่า .wav</small>
+  </div>
+</div>
+
+<script>
+const qs = s => document.querySelector(s);
+const statusEl = qs('#status');
+function setStatus(txt, tone='muted'){
+  statusEl.className = 'status '+(tone==='ok'?'ok pill':tone==='warn'?'warn pill':tone==='err'?'err pill':'muted');
+  statusEl.textContent = txt;
+}
+function fmt(n){ return String(n).padStart(2,'0'); }
+
+// timer
+let sec=0, tInt=null;
+function startTimer(){ sec=0; qs('#timer').textContent="00:00"; tInt=setInterval(()=>{sec++; qs('#timer').textContent=fmt(sec/60|0)+':'+fmt(sec%60)},1000) }
+function stopTimer(){ clearInterval(tInt); }
+
+// mic / record
+let mediaRecorder=null, chunks=[], analyser, raf, vuB=qs('#vu'), audioCtx, micStream, currentBlob=null;
+
+async function listMics(){
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  const mics = devices.filter(d=>d.kind==='audioinput');
+  qs('#micSelect').innerHTML = mics.map(d=>`<option value="${d.deviceId}">${d.label||'Microphone'}</option>`).join('');
+}
+
+async function startRec(){
+  const devId = qs('#micSelect').value || undefined;
+  micStream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: devId?{exact:devId}:undefined }});
+  chunks=[];
+  mediaRecorder = new MediaRecorder(micStream, { mimeType: 'audio/webm' });
+  mediaRecorder.ondataavailable = e => chunks.push(e.data);
+  mediaRecorder.onstop = () => {
+    currentBlob = new Blob(chunks, { type:'audio/webm' });
+    setStatus(`บันทึกเสร็จ • ${(currentBlob.size/1024/1024).toFixed(2)} MB`,'ok');
+    stopTimer(); stopMeter();
+  };
+
+  // VU meter
+  audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  const src = audioCtx.createMediaStreamSource(micStream);
+  analyser = audioCtx.createAnalyser(); analyser.fftSize = 2048;
+  src.connect(analyser); startMeter();
+
+  mediaRecorder.start(250);
+  qs('#recStart').disabled=true; qs('#recStop').disabled=false;
+  setStatus('กำลังบันทึก…','warn'); startTimer();
+}
+
+function stopRec(){
+  mediaRecorder && mediaRecorder.stop();
+  micStream && micStream.getTracks().forEach(t=>t.stop());
+  qs('#recStart').disabled=false; qs('#recStop').disabled=true;
+}
+
+function startMeter(){
+  const data = new Uint8Array(analyser.fftSize);
+  const loop=()=>{
+    analyser.getByteTimeDomainData(data);
+    let sum=0; for(let i=0;i<data.length;i++){ const v=(data[i]-128)/128; sum+=v*v; }
+    const rms=Math.sqrt(sum/data.length);
+    vuB.style.width = Math.min(100, Math.max(3, Math.round(rms*180)))+'%';
+    raf = requestAnimationFrame(loop);
+  }; loop();
+}
+function stopMeter(){ cancelAnimationFrame(raf); vuB.style.width='0%' }
+
+// upload + summarize
+async function uploadAndSummarize(file){
+  if(!file){ setStatus('ยังไม่มีไฟล์เสียง','err'); return; }
+  const fd = new FormData(); fd.append('audio', file);
+  const template = qs('#template').value;
+  setStatus('กำลังอัปโหลดและถอดเสียง…','warn');
+  try{
+    const r = await fetch(`/upload-audio-and-summarize?template=${encodeURIComponent(template)}`, { method:'POST', body:fd });
+    const j = await r.json();
+    if(!j.ok) throw new Error(j.error || 'อัปโหลดไม่สำเร็จ');
+    qs('#transcript').value = j.transcript || '';
+    qs('#transLen').style.display='inline-block';
+    qs('#transLen').textContent = `transcript ${ (j.transcript||'').length } ตัวอักษร`;
+    qs('#result').value = j.summary || '';
+    qs('#summaryInfo').textContent = `สรุปสำเร็จด้วยเทมเพลต: ${template}`;
+    setStatus('สำเร็จ: ได้ transcript และสรุปพร้อมใช้งาน','ok');
+  }catch(e){
+    setStatus('อัปโหลดล้มเหลว: '+e.message,'err');
+  }
+}
+
+// summarize text only
+async function summarizeFromText(){
+  const text = (qs('#transcript').value || '').trim();
+  if(!text){ alert('กรุณาใส่ข้อความ'); return; }
+  const template = qs('#template').value;
+  setStatus('กำลังสรุปข้อความ…','warn');
+  try{
+    const r = await fetch('/summarize-from-text', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ text, template }) });
+    const j = await r.json();
+    if(!j.ok) throw new Error(j.error||'');
+    qs('#result').value = j.summary || '';
+    qs('#summaryInfo').textContent = `สรุปจากข้อความด้วยเทมเพลต: ${template}`;
+    setStatus('สรุปสำเร็จ','ok');
+  }catch(e){
+    setStatus('สรุปล้มเหลว: '+e.message,'err');
+  }
+}
+
+// copy / save
+async function copyText(){ await navigator.clipboard.writeText(qs('#result').value||''); setStatus('คัดลอกผลลัพธ์แล้ว','ok'); }
+function saveTxt(){
+  const t = qs('#result').value || '';
+  const fn = `opd-card_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.txt`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([t],{type:'text/plain;charset=utf-8'}));
+  a.download = fn; a.click(); URL.revokeObjectURL(a.href);
+  setStatus('บันทึกไฟล์แล้ว','ok');
+}
+
+// events
+qs('#recStart').onclick = startRec;
+qs('#recStop').onclick = stopRec;
+qs('#sendAudio').onclick = ()=> uploadAndSummarize(qs('#file').files[0] || currentBlob);
+qs('#summarize').onclick = summarizeFromText;
+qs('#copy').onclick = copyText;
+qs('#save').onclick = saveTxt;
+qs('#clearTrans').onclick = ()=>{ qs('#transcript').value=''; qs('#transLen').style.display='none'; };
+
+(async ()=>{
+  try{
+    await navigator.mediaDevices.getUserMedia({audio:true});
+    await listMics();
+  }catch{
+    // เฉย ๆ ถ้าเบราว์เซอร์ยังไม่อนุญาตไมค์
+  }
+})();
+</script>
+</body>
+</html>
