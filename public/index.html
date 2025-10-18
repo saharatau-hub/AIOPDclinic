@@ -24,10 +24,11 @@
 <body>
 <header>
   <h2 style="margin:0">Tech Tool OPD Card + Follow-up</h2>
-  <div style="opacity:.85">เลือกคลินิก (ไม่จำเพาะโรค) : Neuromed / Neurosx / กายภาพ / จิตเวช / จักษุ</div>
+  <div style="opacity:.85">เลือกคลินิก: Neuromed / Neurosx / กายภาพ / จิตเวช / จักษุ</div>
 </header>
 <main>
 
+  <!-- 1) จากข้อความ -->
   <section>
     <h3 style="margin:0 0 8px 0">1) สรุป OPD จากข้อความ</h3>
     <div class="row row-2">
@@ -51,8 +52,9 @@
     <div class="out" id="outText"></div>
   </section>
 
+  <!-- 2) จากเสียง (ปุ่มเดียว Record & Summarize + อัปโหลดไฟล์สำรอง) -->
   <section>
-    <h3 style="margin:0 0 8px 0">2) สรุป OPD จากไฟล์เสียง</h3>
+    <h3 style="margin:0 0 8px 0">2) สรุป OPD จากเสียงสนทนา (ปุ่มเดียว)</h3>
     <div class="row row-2">
       <div>
         <label for="clinic2">คลินิก</label>
@@ -65,18 +67,28 @@
         </select>
       </div>
       <div>
-        <label for="audio">อัปโหลดไฟล์เสียง</label>
-        <input id="audio" type="file" accept="audio/*" />
+        <label>&nbsp;</label>
+        <button id="btnRecordOne" style="width:100%">🎤 Record &amp; Summarize</button>
       </div>
     </div>
-    <div class="controls">
-      <button id="btnAudio">อัปโหลด & ถอดเสียง → สรุป</button>
-      <button class="secondary" id="btnClearAudio">ล้าง</button>
+
+    <div class="row row-2" style="margin-top:8px">
+      <div>
+        <label for="audio">หรือเลือกไฟล์เสียงที่มี</label>
+        <input id="audio" type="file" accept="audio/*" />
+      </div>
+      <div>
+        <label>&nbsp;</label>
+        <button id="btnUploadFile" class="secondary" style="width:100%">📤 อัปโหลดไฟล์ที่เลือก</button>
+      </div>
     </div>
+
+    <audio id="audioPreview" controls style="width:100%;margin-top:10px;display:none"></audio>
     <div class="out" id="outTrans"></div>
     <div class="out" id="outSum"></div>
   </section>
 
+  <!-- 3) Follow-up Template ตามคลินิก -->
   <section>
     <h3 style="margin:0 0 8px 0">3) แผนติดตาม (Follow-up) แยกตามคลินิก</h3>
     <div class="row row-2">
@@ -100,7 +112,7 @@
       </div>
     </div>
     <label for="ctx">บริบท/ประเด็นสำคัญของผู้ป่วย</label>
-    <textarea id="ctx" rows="5" placeholder="เช่น ปวดศีรษะ/อ่อนแรง/หลังผ่าตัด/ต้องการกายภาพ..."></textarea>
+    <textarea id="ctx" rows="5" placeholder="เช่น หลังผ่าตัด/อ่อนแรง/ปวด/ต้องการกายภาพ..."></textarea>
     <div class="controls">
       <button id="btnFU">สร้างแผนติดตาม</button>
       <button class="secondary" id="btnClearFU">ล้าง</button>
@@ -132,32 +144,78 @@ $('btnText').onclick = async () => {
 };
 $('btnClearText').onclick = () => { $('raw').value=''; $('outText').textContent=''; };
 
-// 2) From audio
-$('btnAudio').onclick = async () => {
-  const clinicKey = $('clinic2').value;
-  const file = $('audio').files[0];
-  if (!file) return alert('กรุณาเลือกไฟล์เสียง');
-  $('outTrans').textContent = 'กำลังอัปโหลด & ถอดเสียง...';
-  $('outSum').textContent = '';
+// 2) Record & Summarize (ปุ่มเดียว) + อัปโหลดไฟล์สำรอง
+let mediaRecorderOne = null, chunksOne = [], recordingTimer = null;
+const btnRecordOne = $('btnRecordOne'), audioPreview = $('audioPreview');
+
+function setRecBtn(state){ btnRecordOne.textContent = state==='rec' ? '⏹️ Stop & Summarize' : '🎤 Record & Summarize'; }
+
+async function startRec(){
+  const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
+  const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
+  mediaRecorderOne = new MediaRecorder(stream, { mimeType: mime });
+  chunksOne = [];
+  mediaRecorderOne.ondataavailable = e => { if(e.data.size>0) chunksOne.push(e.data); };
+  mediaRecorderOne.onstop = async () => {
+    const blob = new Blob(chunksOne, { type: mime });
+    const url = URL.createObjectURL(blob);
+    audioPreview.src = url; audioPreview.style.display='block';
+    await uploadBlobAndSummarize(blob, 'recorded.webm');
+  };
+  mediaRecorderOne.start(250);
+  setRecBtn('rec');
+  recordingTimer = setTimeout(()=>{ if(mediaRecorderOne?.state==='recording') mediaRecorderOne.stop(); }, 15*60*1000);
+}
+
+function stopRec(){
+  if(mediaRecorderOne && mediaRecorderOne.state==='recording'){
+    mediaRecorderOne.stop();
+    mediaRecorderOne.stream.getTracks().forEach(t=>t.stop());
+  }
+  clearTimeout(recordingTimer);
+  setRecBtn('idle');
+}
+
+btnRecordOne.onclick = async () => {
+  if(!mediaRecorderOne || mediaRecorderOne.state==='inactive'){
+    try{ $('outTrans').textContent='กำลังบันทึกเสียง...'; $('outSum').textContent=''; await startRec(); }
+    catch(e){ $('outTrans').textContent='❌ ไม่เข้าถึงไมค์: '+(e.message||e); setRecBtn('idle'); }
+  } else {
+    $('outTrans').textContent='กำลังอัปโหลดและถอดเสียง...';
+    stopRec();
+  }
+};
+
+async function uploadBlobAndSummarize(blob, filename){
   try{
+    const clinicKey = $('clinic2').value;
     const fd = new FormData();
-    fd.append('audio', file);
+    fd.append('audio', blob, filename);
     fd.append('clinicKey', clinicKey);
     const r = await fetch('/api/opd/upload-audio', { method:'POST', body: fd });
     const d = await r.json();
-    $('outTrans').textContent = d.transcript || '(no transcript)';
-    $('outSum').textContent = d.summary || '(no summary)';
-  } catch(e){ $('outTrans').textContent = 'เกิดข้อผิดพลาด'; }
-};
-$('btnClearAudio').onclick = () => { $('audio').value=''; $('outTrans').textContent=''; $('outSum').textContent=''; };
+    if(!d.ok) throw new Error(d.error||'error');
+    $('outTrans').textContent = d.transcript || '(ไม่มีข้อความ)';
+    $('outSum').textContent = d.summary || '(ยังไม่มีสรุป)';
+  }catch(e){
+    $('outTrans').textContent = '❌ อัปโหลดล้มเหลว: ' + (e.message||e);
+  }
+}
 
-// 3) Follow-up per clinic
+$('btnUploadFile').onclick = async ()=>{
+  const f = $('audio').files[0];
+  if(!f) return alert('กรุณาเลือกไฟล์เสียงก่อน');
+  audioPreview.src = URL.createObjectURL(f); audioPreview.style.display='block';
+  $('outTrans').textContent='กำลังอัปโหลดและถอดเสียง...'; $('outSum').textContent='';
+  await uploadBlobAndSummarize(f, f.name || 'audio.webm');
+};
+
+// 3) Follow-up
 $('btnFU').onclick = async () => {
   const clinicKey = $('clinic3').value;
   const riskLevel = $('risk').value;
   const contextText = $('ctx').value.trim();
-  $('outFUJson').textContent = 'กำลังสร้างแผน...';
-  $('outFUMd').textContent = '';
+  $('outFUJson').textContent='กำลังสร้างแผน...'; $('outFUMd').textContent='';
   try{
     const r = await fetch('/api/followup/from-text', {
       method:'POST',
@@ -165,12 +223,12 @@ $('btnFU').onclick = async () => {
       body: JSON.stringify({ clinicKey, riskLevel, contextText })
     });
     const d = await r.json();
-    if(!d.ok) throw new Error(d.error || 'error');
+    if(!d.ok) throw new Error(d.error||'error');
     $('outFUJson').textContent = JSON.stringify(d.structured, null, 2);
     $('outFUMd').textContent = d.markdown || '';
-  } catch(e){ $('outFUJson').textContent = 'เกิดข้อผิดพลาด'; }
+  }catch(e){ $('outFUJson').textContent='เกิดข้อผิดพลาด'; }
 };
-$('btnClearFU').onclick = () => { $('ctx').value=''; $('outFUJson').textContent=''; $('outFUMd').textContent=''; };
+$('btnClearFU').onclick = ()=>{ $('ctx').value=''; $('outFUJson').textContent=''; $('outFUMd').textContent=''; };
 </script>
 </body>
 </html>
