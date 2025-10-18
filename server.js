@@ -132,7 +132,17 @@ const CLINICS = {
   }
 };
 
-// ---------- Helpers ----------
+// ---------- Helper: safe LLM call ----------
+async function callLLM(model, input) {
+  const payload = { model, input };
+  // reasoning models (o1/o3) ไม่รองรับ temperature
+  if (!/^o\d/i.test(model)) {
+    payload.temperature = 0.2;
+  }
+  return openai.responses.create(payload);
+}
+
+// ---------- Prompt builders ----------
 function buildThaiPrompt(text, clinicKey = 'neuromed') {
   const c = CLINICS[clinicKey] || CLINICS.neuromed;
   return `
@@ -187,159 +197,112 @@ function renderFollowupMarkdown(fp) {
   return out.join('\n');
 }
 
-// ---------- Coaching Prompt ----------
 function buildCoachPrompt(rawText, clinicKey='neuromed'){
   const clinic = CLINICS[clinicKey]?.name || 'Neurology';
   const hint   = CLINICS[clinicKey]?.promptHint || '';
   return `
 คุณเป็นแพทย์คลินิก ${clinic}.
 จากข้อมูลผู้ป่วยต่อไปนี้ จงสร้างผลลัพธ์ 3 ส่วนเป็นภาษาไทยดังนี้:
-[1] คำแนะนำผู้ป่วย (ง่าย เข้าใจเร็ว 8–12 ข้อ):
-- สิ่งที่ต้องทำทุกวัน/ทุกสัปดาห์
-- วิธีใช้ยา/อุปกรณ์ (ถ้ามี)
-- ข้อห้าม/ควรหลีกเลี่ยง
-- สัญญาณอันตรายที่ต้องกลับโรงพยาบาลทันที
-
-[2] คำแนะนำแพทย์ (เช็กลิสต์ 10–15 ข้อ):
-- Labs/Imaging + เงื่อนไข
-- ยา: เริ่ม/ปรับ/หยุด + เฝ้าระวัง AE
-- Non-Pharm/ทีมสหสาขา
-- เกณฑ์นัด/Telemedicine และ “ถ้า…ให้ทำ…”
-
-[3] แผนเชิงลึก (Today / 1 สัปดาห์ / 1 เดือน):
-- งาน/ผู้รับผิดชอบ/ตัวชี้วัด/วิธีบันทึก
-- เกณฑ์ความสำเร็จ
-
-รูปแบบเอาต์พุต JSON:
+[1] คำแนะนำผู้ป่วย (ง่าย เข้าใจเร็ว 8–12 ข้อ)
+[2] คำแนะนำแพทย์ (เช็กลิสต์ 10–15 ข้อ)
+[3] แผนเชิงลึก (Today / 1 สัปดาห์ / 1 เดือน)
+ตอบเป็น JSON ตามคีย์ด้านล่างเท่านั้น:
 {
- "patient_advice_md": "markdown",
- "clinician_brief_md": "markdown",
- "deep_plan_md": "markdown",
- "structured": {
-   "patient_tasks_daily": [ "..." ],
-   "patient_red_flags": [ "..." ],
-   "clinician_checklist": [ "..." ],
-   "timeline": {
-     "today":   [ {"task":"","owner":"","metric":""} ],
-     "week_1":  [ {"task":"","owner":"","metric":""} ],
-     "month_1": [ {"task":"","owner":"","metric":""} ]
-   }
- }
+ "patient_advice_md": "...",
+ "clinician_brief_md": "...",
+ "deep_plan_md": "...",
+ "structured": { "patient_tasks_daily":[], "patient_red_flags":[], "clinician_checklist":[], "timeline":{ "today":[],"week_1":[],"month_1":[] } }
 }
-
 บริบทผู้ป่วย:
-<<<
-${String(rawText||'').trim()}
->>>
-
+${rawText}
 ข้อเน้นเฉพาะคลินิก:
 ${hint}
-
-ตอบเป็น JSON เท่านั้น และต้องครบทุกคีย์ตามแบบ
 `.trim();
 }
 
 // ---------- Routes ----------
 app.get('/api/healthz', (_, r) => r.json({ ok: true, time: new Date().toISOString() }));
-app.get('/api/debug/env', (_, r) => r.json({
-  ok: true,
-  node: process.version,
-  model: OPENAI_MODEL,
-  has_api_key: !!process.env.OPENAI_API_KEY
-}));
 
-// summarize from text (supports forceModel:'o3' to try o3 -> gpt-4.1 -> 4o-mini)
+// Summarize text → OPD
 app.post('/api/opd/from-text', async (req, res) => {
   const { rawText = '', clinicKey = 'neuromed', forceModel } = req.body || {};
-  if (!rawText.trim()) return res.status(400).json({ ok: false, error: 'no text' });
+  if (!rawText.trim()) return res.status(400).json({ ok:false, error:'no text' });
 
   const prompt = buildThaiPrompt(rawText, clinicKey);
   const models = forceModel === 'o3'
     ? ['o3', 'gpt-4.1', 'gpt-4o-mini']
-    : [OPENAI_MODEL, 'gpt-4.1', 'gpt-4o-mini'].filter(Boolean);
+    : [OPENAI_MODEL, 'gpt-4.1', 'gpt-4o-mini'];
 
   let lastErr;
   for (const m of models) {
     try {
-      const r = await openai.responses.create({ model: m, input: prompt, temperature: 0.2 });
+      const r = await callLLM(m, prompt);
       const out = r.output_text?.trim?.() || r?.content?.[0]?.text?.trim?.() || '';
-      if (out) return res.json({ ok: true, clinicKey, model_used: m, summary: out });
+      if (out) return res.json({ ok:true, model_used:m, clinicKey, summary:out });
     } catch (e) {
       lastErr = e;
       console.error('[from-text]', m, e?.status, e?.message);
-      if (e?.status === 401 || e?.status === 403) break; // key/permission issue
     }
   }
-  res.status(500).json({ ok:false, error:'summarization failed', message: lastErr?.message });
+  res.status(500).json({ ok:false, error:'summarization failed', message:lastErr?.message });
 });
 
-// upload audio -> transcribe -> summarize
+// Upload audio → transcribe → summarize
 app.post('/api/opd/upload-audio', upload.single('audio'), async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ ok: false, error: 'no file' });
-    const { clinicKey = 'neuromed' } = req.body || {};
+    if (!req.file) return res.status(400).json({ ok:false, error:'no file' });
+    const { clinicKey='neuromed' } = req.body || {};
     const file = new File([req.file.buffer], req.file.originalname || 'audio.webm', { type: req.file.mimetype || 'audio/webm' });
 
     let text = '';
     try {
-      const tr = await openai.audio.transcriptions.create({ file, model: TRANSCRIBE_MODEL, language: 'th' });
+      const tr = await openai.audio.transcriptions.create({ file, model: TRANSCRIBE_MODEL, language:'th' });
       text = tr?.text?.trim?.() || '';
     } catch {
-      const tr = await openai.audio.transcriptions.create({ file, model: 'whisper-1', language: 'th' });
+      const tr = await openai.audio.transcriptions.create({ file, model: 'whisper-1', language:'th' });
       text = tr?.text?.trim?.() || '';
     }
     if (!text) return res.status(500).json({ ok:false, error:'transcription empty' });
 
     const prompt = buildThaiPrompt(text, clinicKey);
-    const r = await openai.responses.create({ model: OPENAI_MODEL, input: prompt, temperature: 0.2 });
+    const r = await callLLM(OPENAI_MODEL, prompt);
     const summary = r.output_text?.trim?.() || r?.content?.[0]?.text?.trim?.() || '';
-    res.json({ ok: true, clinicKey, transcript: text, summary });
+    res.json({ ok:true, clinicKey, transcript:text, summary });
   } catch (e) {
     console.error('[upload-audio]', e?.status, e?.message);
-    res.status(500).json({ ok: false, error: 'upload failed', message: e?.message });
+    res.status(500).json({ ok:false, error:'upload failed', message:e?.message });
   }
 });
 
-// follow-up template
+// Follow-up template
 app.post('/api/followup/from-text', (req, res) => {
-  const { clinicKey = 'neuromed', contextText = '', riskLevel = 'routine' } = req.body || {};
+  const { clinicKey='neuromed', contextText='', riskLevel='routine' } = req.body || {};
   const plan = buildFollowupTemplate(clinicKey, contextText, riskLevel);
   const markdown = renderFollowupMarkdown(plan);
-  res.json({ ok: true, structured: plan, markdown });
+  res.json({ ok:true, structured:plan, markdown });
 });
 
-// coaching (patient advice + clinician brief + deep plan)
+// Coaching (Patient advice + Clinician brief + Deep plan)
 app.post('/api/coach', async (req, res) => {
-  const { rawText = '', clinicKey = 'neuromed', forceModel } = req.body || {};
+  const { rawText='', clinicKey='neuromed', forceModel } = req.body || {};
   if (!rawText.trim()) return res.status(400).json({ ok:false, error:'no text' });
 
   const prompt = buildCoachPrompt(rawText, clinicKey);
   const models = forceModel === 'o3'
     ? ['o3', 'gpt-4.1', 'gpt-4o-mini']
-    : [OPENAI_MODEL, 'gpt-4.1', 'gpt-4o-mini'].filter(Boolean);
+    : [OPENAI_MODEL, 'gpt-4.1', 'gpt-4o-mini'];
 
   let lastErr;
   for (const m of models) {
     try {
-      const r = await openai.responses.create({ model: m, input: prompt, temperature: 0.2 });
-      const text = r.output_text?.trim?.() || r?.content?.[0]?.text?.trim?.() || '';
-      const json = JSON.parse(text);
+      const r = await callLLM(m, prompt);
+      const txt = r.output_text?.trim?.() || r?.content?.[0]?.text?.trim?.() || '';
+      const clean = txt.replace(/```json|```/g,'').trim();
+      const json = JSON.parse(clean);
       return res.json({ ok:true, model_used:m, ...json });
     } catch (e) {
       lastErr = e;
       console.error('[coach]', m, e?.status, e?.message);
-      // ถ้า parse JSON ไม่ผ่าน อาจเป็นเพราะโมเดลส่ง markdown หุ้มโค้ดมา ลองลอก ``` ออกแบบหยาบ ๆ
-      if (e instanceof SyntaxError && lastErr && typeof lastErr === 'object') {
-        try {
-          const txt = (lastErr.output_text || '').replace(/```json|```/g,'').trim();
-          if (txt) {
-            const j = JSON.parse(txt);
-            return res.json({ ok:true, model_used:m, ...j });
-          }
-        } catch {/* ignore */}
-      }
-      // ลองโมเดลถัดไป
-      continue;
     }
   }
   res.status(500).json({ ok:false, error:'coach failed', message:lastErr?.message });
