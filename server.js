@@ -2,7 +2,7 @@
  * Tech Tool OPD Card + Follow-up (Clinic Templates)
  * Node 20+
  *
- * ENV ตัวอย่าง (.env)
+ * ENV ตัวอย่าง (.env):
  *   OPENAI_API_KEY=sk-...
  *   OPENAI_MODEL=gpt-4o-mini
  *   TRANSCRIBE_MODEL=gpt-4o-mini-transcribe
@@ -78,7 +78,7 @@ const CLINICS = {
     followup: {
       default_window_days: 14,
       tests: ['CBC (post-op ถ้าจำเป็น)', 'Electrolytes (ถ้าสงสัย SIADH/DI)'],
-      imaging: ['CT/MRI follow-up ตามชนิดผ่าตัด'],
+      imaging: ['CT/MRI follow-up ตามชนิดผ่าตัด/ภาวะเลือดออก/มวลก้อน'],
       meds: ['Pain control', 'Antibiotics', 'DVT prophylaxis'],
       counsel: ['การดูแลแผลและสังเกตติดเชื้อ', 'ข้อจำกัดกิจกรรม'],
       monitor: ['ไข้ ปวดแผล แผลบวมแดง', 'Neurologic status baseline'],
@@ -132,21 +132,21 @@ const CLINICS = {
   }
 };
 
-// ---------- Helper ----------
+// ---------- Helpers ----------
 function buildThaiPrompt(text, clinicKey = 'neuromed') {
   const c = CLINICS[clinicKey] || CLINICS.neuromed;
   return `
 คุณเป็นแพทย์ในคลินิก ${c.name}
 สรุป "OPD Card ภาษาไทย" จากข้อความต่อไปนี้ ให้สั้น ครบ เข้าใจง่าย:
 - Chief Complaint
-- Present Illness
-- Past History / Meds / Allergy
+- Present Illness (+ ROS ถ้ามี)
+- Past History / Meds / Allergy / Risk
 - Physical Exam (เฉพาะจุดสำคัญ)
 - Assessment + Plan
 แนวทางเฉพาะคลินิก: ${c.promptHint}
 
 --- ข้อความดิบ ---
-${text.trim()}
+${String(text || '').trim()}
 `.trim();
 }
 
@@ -156,7 +156,7 @@ function buildFollowupTemplate(clinicKey, ctx = '', risk = 'routine') {
   return {
     clinic: CLINICS[clinicKey]?.name || 'Neurology',
     risk,
-    days,
+    days: Math.max(3, days),
     context: ctx,
     tests: f.tests,
     imaging: f.imaging || [],
@@ -169,6 +169,24 @@ function buildFollowupTemplate(clinicKey, ctx = '', risk = 'routine') {
   };
 }
 
+function renderFollowupMarkdown(fp) {
+  const A = (x)=>Array.isArray(x)?x:[];
+  const out=[];
+  out.push(`**แผนติดตาม (${fp.clinic})**`);
+  out.push(`- ระดับความเสี่ยง: **${fp.risk.toUpperCase()}**`);
+  out.push(`- นัดติดตามใน: **${fp.days} วัน**`);
+  if (fp.context) out.push(`- บริบท: ${fp.context}`);
+  if (A(fp.tests).length){ out.push(`\n**Tests/Labs:**`); A(fp.tests).forEach(v=>out.push(`- ${v}`)); }
+  if (A(fp.imaging).length){ out.push(`\n**Imaging/Procedures:**`); A(fp.imaging).forEach(v=>out.push(`- ${v}`)); }
+  if (A(fp.meds).length){ out.push(`\n**การจัดการยา:**`); A(fp.meds).forEach(v=>out.push(`- ${v}`)); }
+  if (A(fp.counsel).length){ out.push(`\n**คำแนะนำผู้ป่วย:**`); A(fp.counsel).forEach(v=>out.push(`- ${v}`)); }
+  if (A(fp.monitor).length){ out.push(`\n**ตัวแปรติดตาม:**`); A(fp.monitor).forEach(v=>out.push(`- ${v}`)); }
+  if (A(fp.red).length){ out.push(`\n**Red flags กลับก่อนนัด:**`); A(fp.red).forEach(v=>out.push(`- ${v}`)); }
+  if (A(fp.team).length){ out.push(`\n**ทีมสหสาขา/ส่งต่อ:**`); A(fp.team).forEach(v=>out.push(`- ${v}`)); }
+  out.push(`\n**Telemedicine:** ${fp.tele ? 'เหมาะสม (OK)' : 'ไม่เหมาะสม'}`);
+  return out.join('\n');
+}
+
 // ---------- Routes ----------
 app.get('/api/healthz', (_, r) => r.json({ ok: true, time: new Date().toISOString() }));
 app.get('/api/debug/env', (_, r) => r.json({
@@ -178,12 +196,15 @@ app.get('/api/debug/env', (_, r) => r.json({
   has_api_key: !!process.env.OPENAI_API_KEY
 }));
 
-// summarize from text with fallback
+// summarize from text (supports forceModel:'o3')
 app.post('/api/opd/from-text', async (req, res) => {
-  const { rawText = '', clinicKey = 'neuromed' } = req.body || {};
+  const { rawText = '', clinicKey = 'neuromed', forceModel } = req.body || {};
   if (!rawText.trim()) return res.status(400).json({ ok: false, error: 'no text' });
+
   const prompt = buildThaiPrompt(rawText, clinicKey);
-  const models = [OPENAI_MODEL, 'gpt-4o-mini', 'gpt-4o'];
+  const models = forceModel === 'o3'
+    ? ['o3', 'gpt-4.1', 'gpt-4o-mini']
+    : [OPENAI_MODEL, 'gpt-4.1', 'gpt-4o-mini'].filter(Boolean);
 
   let lastErr;
   for (const m of models) {
@@ -194,42 +215,45 @@ app.post('/api/opd/from-text', async (req, res) => {
     } catch (e) {
       lastErr = e;
       console.error('[from-text]', m, e?.status, e?.message);
-      if (e?.status === 401) break;
+      if (e?.status === 401 || e?.status === 403) break; // key/permission issue
     }
   }
-  res.status(500).json({ ok: false, error: 'summarization failed', message: lastErr?.message });
+  res.status(500).json({ ok:false, error:'summarization failed', message: lastErr?.message });
 });
 
-// upload audio
+// upload audio -> transcribe -> summarize
 app.post('/api/opd/upload-audio', upload.single('audio'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ ok: false, error: 'no file' });
-    const { clinicKey = 'neuromed' } = req.body;
-    const f = new File([req.file.buffer], req.file.originalname || 'audio.webm', { type: req.file.mimetype || 'audio/webm' });
+    const { clinicKey = 'neuromed' } = req.body || {};
+    const file = new File([req.file.buffer], req.file.originalname || 'audio.webm', { type: req.file.mimetype || 'audio/webm' });
 
     let text = '';
     try {
-      const tr = await openai.audio.transcriptions.create({ file: f, model: TRANSCRIBE_MODEL, language: 'th' });
+      const tr = await openai.audio.transcriptions.create({ file, model: TRANSCRIBE_MODEL, language: 'th' });
       text = tr?.text?.trim?.() || '';
     } catch {
-      const tr = await openai.audio.transcriptions.create({ file: f, model: 'whisper-1', language: 'th' });
+      const tr = await openai.audio.transcriptions.create({ file, model: 'whisper-1', language: 'th' });
       text = tr?.text?.trim?.() || '';
     }
+    if (!text) return res.status(500).json({ ok:false, error:'transcription empty' });
 
     const prompt = buildThaiPrompt(text, clinicKey);
     const r = await openai.responses.create({ model: OPENAI_MODEL, input: prompt, temperature: 0.2 });
     const summary = r.output_text?.trim?.() || r?.content?.[0]?.text?.trim?.() || '';
-    res.json({ ok: true, transcript: text, summary });
+    res.json({ ok: true, clinicKey, transcript: text, summary });
   } catch (e) {
-    res.status(500).json({ ok: false, error: 'upload failed', message: e.message });
+    console.error('[upload-audio]', e?.status, e?.message);
+    res.status(500).json({ ok: false, error: 'upload failed', message: e?.message });
   }
 });
 
-// follow-up
+// follow-up template
 app.post('/api/followup/from-text', (req, res) => {
-  const { clinicKey = 'neuromed', contextText = '', riskLevel = 'routine' } = req.body;
+  const { clinicKey = 'neuromed', contextText = '', riskLevel = 'routine' } = req.body || {};
   const plan = buildFollowupTemplate(clinicKey, contextText, riskLevel);
-  res.json({ ok: true, structured: plan });
+  const markdown = renderFollowupMarkdown(plan);
+  res.json({ ok: true, structured: plan, markdown });
 });
 
 // ---------- Static ----------
