@@ -1,25 +1,19 @@
 {
-  "name": "clinic_web",
+  "name": "tech-tool-opd-followup",
   "version": "1.0.0",
-  "private": true,
+  "description": "OPD Card summarizer + Clinic-based follow-up with audio record & upload",
   "type": "module",
-  "main": "server.js",
-  "engines": {
-    "node": "20.x"
-  },
+  "engines": { "node": ">=20" },
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "NODE_ENV=development node server.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
-    "dotenv": "^17.2.3",
-    "express": "^4.21.2",
-    "express-rate-limit": "^8.1.0",
-    "multer": "^1.4.5-lts.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.4.0",
+    "multer": "^2.0.0",
     "openai": "^4.104.0"
-  },
-  "description": "",
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+  }
 }
