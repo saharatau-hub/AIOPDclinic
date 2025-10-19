@@ -1,7 +1,7 @@
 {
   "name": "tech-tool-opd-followup",
-  "version": "1.0.0",
-  "description": "OPD Card summarizer + Clinic-based follow-up with audio record & upload",
+  "version": "1.2.0",
+  "description": "Transkriptor -> OPD Card with clinic templates, follow-up timeline, and deep coaching",
   "type": "module",
   "engines": { "node": ">=20" },
   "scripts": {
