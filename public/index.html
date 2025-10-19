@@ -5,60 +5,37 @@
   <title>Transkriptor → OPD Card (Desktop)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    :root{
-      --bg:#ffffff; --fg:#111827; --muted:#6b7280; --accent:#2563eb; --accent-2:#10b981;
-      --line:#e5e7eb; --chip:#f3f4f6; --danger:#ef4444;
-    }
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,'TH SarabunPSK',sans-serif}
-    header{padding:18px 20px;border-bottom:1px solid var(--line)}
-    header h1{margin:0;font-size:22px}
+    :root{ --bg:#fff; --fg:#111827; --muted:#6b7280; --accent:#2563eb; --line:#e5e7eb; --chip:#f3f4f6; --danger:#ef4444; }
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,'TH SarabunPSK',sans-serif}
+    header{padding:18px 20px;border-bottom:1px solid var(--line)} header h1{margin:0;font-size:22px}
     main{max-width:1100px;margin:18px auto;padding:0 14px 40px}
     .card{border:1px solid var(--line);border-radius:14px;padding:16px;background:#fff}
-    .row{display:grid;gap:12px}
-    @media(min-width:900px){ .row-2{grid-template-columns:1fr 1fr} }
+    .row{display:grid;gap:12px} @media(min-width:900px){ .row-2{grid-template-columns:1fr 1fr} }
     label{font-weight:700;display:block;margin-bottom:6px}
     select,input[type=file]{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;background:#fff}
     .btn{border:1px solid var(--accent);background:var(--accent);color:#fff;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:700}
-    .btn.secondary{background:#fff;color:var(--fg);border-color:var(--line)}
-    .btn.danger{background:var(--danger);border-color:var(--danger)}
-    .btn.ghost{background:#fff;border-color:var(--line)}
-    .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .btn.secondary{background:#fff;color:var(--fg);border-color:var(--line)} .btn.danger{background:var(--danger);border-color:var(--danger)}
+    .btn.ghost{background:#fff;border-color:var(--line)} .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
     .chip{display:inline-flex;align-items:center;gap:6px;background:var(--chip);border:1px solid var(--line);border-radius:999px;padding:6px 10px;color:var(--muted)}
-    .ok{background:rgba(16,185,129,.12);color:#065f46;border-color:#10b981}
-    .timer{min-width:60px;text-align:center;font-variant-numeric:tabular-nums}
+    .ok{background:rgba(16,185,129,.12);color:#065f46;border-color:#10b981} .timer{min-width:60px;text-align:center;font-variant-numeric:tabular-nums}
     textarea{width:100%;min-height:240px;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff;resize:vertical;line-height:1.6}
-    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
-    .right-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-bottom:6px}
-    small.muted{color:var(--muted)}
-    .divider{height:1px;background:var(--line);margin:14px 0}
-
-    /* Tabs */
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace} .right-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-bottom:6px}
+    small.muted{color:var(--muted)} .divider{height:1px;background:var(--line);margin:14px 0}
     .tabs{display:flex;gap:8px;border-bottom:1px solid var(--line);margin-bottom:10px;flex-wrap:wrap}
     .tab{padding:8px 12px;border:1px solid var(--line);border-bottom:none;border-radius:10px 10px 0 0;background:#f9fafb;cursor:pointer}
     .tab.active{background:#fff;border-color:var(--accent)}
-    .tabpanes > .pane{display:none;border:1px solid var(--line);border-radius:0 12px 12px 12px;padding:14px}
-    .tabpanes > .pane.active{display:block}
-    .md h2,.md h3{margin:8px 0}
-    .md ul{margin:6px 0 6px 1.2rem}
-    .md li{margin:4px 0}
+    .tabpanes>.pane{display:none;border:1px solid var(--line);border-radius:0 12px 12px 12px;padding:14px}
+    .tabpanes>.pane.active{display:block} .md h2,.md h3{margin:8px 0} .md ul{margin:6px 0 6px 1.2rem} .md li{margin:4px 0}
     .export-bar{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:10px}
   </style>
 </head>
 <body>
-  <header>
-    <h1>Transkriptor → OPD Card (Desktop)</h1>
-  </header>
-
+  <header><h1>Transkriptor → OPD Card (Desktop)</h1></header>
   <main>
-
-    <!-- แผงบันทึกเสียง -->
+    <!-- Recorder -->
     <section class="card">
       <div class="row row-2">
-        <div>
-          <label>ไมโครโฟน</label>
-          <select id="micSelect"></select>
-        </div>
+        <div><label>ไมโครโฟน</label><select id="micSelect"></select></div>
         <div>
           <label>&nbsp;</label>
           <div class="toolbar">
@@ -76,15 +53,13 @@
           </div>
         </div>
       </div>
-
       <div class="divider"></div>
-
       <div class="toolbar">
         <input type="file" id="file" accept="audio/*">
         <button id="btnUpload" class="btn">ส่งไฟล์ขึ้นเซิร์ฟเวอร์</button>
         <span id="doneBadge" class="chip ok" style="display:none">สรุปสำเร็จ</span>
       </div>
-      <small class="muted">เคล็ดลับ: ถ้าเสียงยาวมาก แนะนำอัดเป็น .m4a หรือ .webm จะส่งได้ไวกว่า .wav</small>
+      <small class="muted">แนะนำอัดเป็น .m4a หรือ .webm จะส่งได้ไวกว่า .wav</small>
     </section>
 
     <!-- Transcript + Outputs -->
@@ -93,26 +68,25 @@
         <!-- Transcript -->
         <div>
           <h3 style="margin:0 0 8px 0">Transcript (ข้อความถอดเสียง)</h3>
-          <div class="right-actions">
-            <button id="btnClearTranscript" class="btn ghost">ล้าง</button>
-          </div>
+          <div class="right-actions"><button id="btnClearTranscript" class="btn ghost">ล้าง</button></div>
           <textarea id="transcript" class="mono" placeholder="ข้อความจากการถอดเสียงจะแสดงที่นี่..."></textarea>
           <div class="toolbar" style="margin-top:8px">
             <button id="btnSumm" class="btn">สรุปเป็น OPD Card</button>
-            <button id="btnSummDeep" class="btn secondary" title="ใช้โมเดล o3 เพื่อวิเคราะห์ละเอียด">สรุปเชิงลึก (ใช้ o3)</button>
-            <button id="btnCoach" class="btn secondary" title="สร้างคำแนะนำผู้ป่วย/แพทย์ และแผนเชิงลึก">คำแนะนำ & แผนเชิงลึก</button>
+            <button id="btnSummDeep" class="btn secondary" title="ใช้ o3">สรุปเชิงลึก (ใช้ o3)</button>
+            <button id="btnCoach" class="btn secondary" title="สร้างคำแนะนำผู้ป่วย/แพทย์ + แผนเชิงลึก">คำแนะนำ & แผนเชิงลึก</button>
+            <button id="btnFU" class="btn secondary" title="สรุปบันทึกติดตามและบันทึกลงไทม์ไลน์">ติดตาม (Follow-up)</button>
           </div>
         </div>
 
-        <!-- Outputs: Tabs -->
+        <!-- Outputs -->
         <div>
           <h3 style="margin:0 0 8px 0">ผลลัพธ์</h3>
-
           <div class="tabs" id="tabs">
             <div class="tab active" data-pane="opd">OPD Card</div>
             <div class="tab" data-pane="patient">คำแนะนำผู้ป่วย</div>
             <div class="tab" data-pane="clinician">คำแนะนำแพทย์</div>
             <div class="tab" data-pane="deep">แผนเชิงลึก</div>
+            <div class="tab" data-pane="fu">Follow-up</div>
           </div>
 
           <div class="tabpanes">
@@ -127,237 +101,156 @@
 
             <div id="pane-patient" class="pane">
               <div id="patientMd" class="md">—</div>
-              <div class="export-bar">
-                <button class="btn" id="btnPrintPatient">Export PDF (ผู้ป่วย)</button>
-              </div>
+              <div class="export-bar"><button class="btn" id="btnPrintPatient">Export PDF (ผู้ป่วย)</button></div>
             </div>
 
             <div id="pane-clinician" class="pane">
               <div id="clinicianMd" class="md">—</div>
-              <div class="export-bar">
-                <button class="btn" id="btnPrintClinician">Export PDF (แพทย์)</button>
-              </div>
+              <div class="export-bar"><button class="btn" id="btnPrintClinician">Export PDF (แพทย์)</button></div>
             </div>
 
             <div id="pane-deep" class="pane">
               <div id="deepMd" class="md">—</div>
-              <div class="export-bar">
-                <button class="btn" id="btnPrintDeep">Export PDF (แผนเชิงลึก)</button>
+              <div class="export-bar"><button class="btn" id="btnPrintDeep">Export PDF (แผนเชิงลึก)</button></div>
+            </div>
+
+            <div id="pane-fu" class="pane">
+              <div class="toolbar" style="justify-content:space-between; margin-bottom:8px">
+                <div class="chip">ประวัติการติดตาม (เรียงใหม่→เก่า)</div>
+                <div>
+                  <button class="btn ghost" id="btnExportFUjson">Export JSON</button>
+                  <button class="btn ghost" id="btnExportFUcsv">Export CSV</button>
+                  <button class="btn danger" id="btnClearFU" title="ล้างเฉพาะเครื่องนี้">ล้างรายการ</button>
+                </div>
               </div>
+              <div id="fuList" class="md">—</div>
             </div>
           </div>
 
         </div>
       </div>
     </section>
-
   </main>
 
 <script>
 /* ---------- Helpers ---------- */
 const $ = (id)=>document.getElementById(id);
 function fmt(sec){sec=Math.max(0,sec|0);const m=String(Math.floor(sec/60)).padStart(2,'0');const s=String(sec%60).padStart(2,'0');return `${m}:${s}`;}
-function setChip(msg,ok){const el=$('statusChip');el.textContent=msg;el.className = 'chip'+(ok?' ok':'');}
-function saveText(filename, text){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'text/plain'}));a.download=filename;document.body.appendChild(a);a.click();a.remove();}
+function setChip(msg,ok){const el=$('statusChip');el.textContent=msg;el.className='chip'+(ok?' ok':'');}
+function saveText(filename, text){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'text/plain'}));a.download=filename;a.click();}
 
-/* Minimal Markdown → HTML (หัวข้อ/รายการ/bold/italic/บรรทัดใหม่) */
+/* Minimal Markdown → HTML */
 function mdToHtml(md=''){
-  md = (md||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-
-  // headings
-  md = md.replace(/^### (.*)$/gm,'<h3>$1</h3>');
-  md = md.replace(/^## (.*)$/gm,'<h2>$1</h2>');
-  md = md.replace(/^# (.*)$/gm,'<h1>$1</h1>');
-
-  // bullets
-  // กลุ่มรายการต่อเนื่อง
-  md = md.replace(/(?:^|\n)(- .+(?:\n- .+)*)/g, (m,g)=>{
-    const items = g.split('\n').map(l=>l.replace(/^- /,'').trim()).map(t=>`<li>${t}</li>`).join('');
-    return `\n<ul>${items}</ul>`;
-  });
-
-  // bold/italic
-  md = md.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
-  md = md.replace(/\*(.+?)\*/g,'<em>$1</em>');
-
-  // line breaks / paragraphs (ง่ายๆ)
-  md = md.replace(/\n{2,}/g,'\n\n');
-  md = md.replace(/\n/g,'<br>');
-  return md;
+  md=(md||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  md=md.replace(/^### (.*)$/gm,'<h3>$1</h3>').replace(/^## (.*)$/gm,'<h2>$1</h2>').replace(/^# (.*)$/gm,'<h1>$1</h1>');
+  md=md.replace(/(?:^|\n)(- .+(?:\n- .+)*)/g,(m,g)=>`\n<ul>${g.split('\n').map(l=>l.replace(/^- /,'').trim()).map(t=>`<li>${t}</li>`).join('')}</ul>`);
+  md=md.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>');
+  md=md.replace(/\n{2,}/g,'\n\n').replace(/\n/g,'<br>'); return md;
 }
 
 /* ---------- Tabs ---------- */
-const tabs = document.querySelectorAll('.tab');
-const panes = {
-  opd: $('pane-opd'),
-  patient: $('pane-patient'),
-  clinician: $('pane-clinician'),
-  deep: $('pane-deep')
-};
-tabs.forEach(t=>{
-  t.addEventListener('click', ()=>{
-    tabs.forEach(x=>x.classList.remove('active'));
-    Object.values(panes).forEach(p=>p.classList.remove('active'));
-    t.classList.add('active');
-    panes[t.dataset.pane].classList.add('active');
-  });
-});
+const panes={ opd:$('pane-opd'),patient:$('pane-patient'),clinician:$('pane-clinician'),deep:$('pane-deep'),fu:$('pane-fu') };
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{ document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active')); Object.values(panes).forEach(p=>p.classList.remove('active')); t.classList.add('active'); panes[t.dataset.pane].classList.add('active'); });
 
 /* ---------- Mic list ---------- */
-async function loadMics(){
-  try{
-    await navigator.mediaDevices.getUserMedia({audio:true});
-    const devs = await navigator.mediaDevices.enumerateDevices();
-    const mics = devs.filter(d=>d.kind==='audioinput');
-    const sel = $('micSelect'); sel.innerHTML='';
-    mics.forEach((m,i)=>{
-      const o=document.createElement('option');
-      o.value=m.deviceId; o.textContent=m.label||`ไมค์ ${i+1}`;
-      sel.appendChild(o);
-    });
-  }catch(e){ setChip('อนุญาตไมค์ก่อน', false); }
-}
+async function loadMics(){ try{ await navigator.mediaDevices.getUserMedia({audio:true});
+  const devs=await navigator.mediaDevices.enumerateDevices(); const mics=devs.filter(d=>d.kind==='audioinput'); const sel=$('micSelect'); sel.innerHTML='';
+  mics.forEach((m,i)=>{ const o=document.createElement('option'); o.value=m.deviceId; o.textContent=m.label||`ไมค์ ${i+1}`; sel.appendChild(o); });
+}catch{ setChip('อนุญาตไมค์ก่อน', false);}}
 
 /* ---------- Recorder ---------- */
-let mediaRecorder, chunks=[], timerId=null, t0=0;
+let mediaRecorder,chunks=[],timerId=null,t0=0;
+$('btnStart').onclick=async()=>{ try{ const deviceId=$('micSelect').value||undefined;
+  const stream=await navigator.mediaDevices.getUserMedia({audio:{deviceId:deviceId?{exact:deviceId}:undefined}});
+  const mime=MediaRecorder.isTypeSupported('audio/webm;codecs=opus')?'audio/webm;codecs=opus':'audio/webm';
+  mediaRecorder=new MediaRecorder(stream,{mimeType:mime}); chunks=[]; mediaRecorder.ondataavailable=e=>{ if(e.data.size>0)chunks.push(e.data); };
+  mediaRecorder.onstop=async()=>{ stream.getTracks().forEach(t=>t.stop()); const blob=new Blob(chunks,{type:mime}); await uploadBlob(blob,'recorded.webm'); };
+  mediaRecorder.start(250); $('btnStart').disabled=true;$('btnStop').disabled=false; setChip('กำลังบันทึก…', true);
+  t0=Date.now();$('timer').textContent='00:00'; timerId=setInterval(()=>$('timer').textContent=fmt(((Date.now()-t0)/1000)|0),500);
+}catch{ setChip('ไม่พบไมค์/ไม่ได้อนุญาต', false); }};
+$('btnStop').onclick=()=>{ if(mediaRecorder && mediaRecorder.state==='recording'){ mediaRecorder.stop(); } $('btnStart').disabled=false;$('btnStop').disabled=true; clearInterval(timerId); setChip('กำลังอัปโหลด…', true); };
 
-$('btnStart').onclick = async ()=>{
-  try{
-    const deviceId = $('micSelect').value || undefined;
-    const stream = await navigator.mediaDevices.getUserMedia({ audio:{ deviceId: deviceId ? {exact:deviceId}:undefined }});
-    const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
-    mediaRecorder = new MediaRecorder(stream,{mimeType:mime}); chunks=[];
-    mediaRecorder.ondataavailable = e=>{ if(e.data.size>0) chunks.push(e.data); };
-    mediaRecorder.onstop = async ()=>{
-      stream.getTracks().forEach(t=>t.stop());
-      const blob = new Blob(chunks,{type:mime});
-      await uploadBlob(blob,'recorded.webm');
-    };
-    mediaRecorder.start(250);
-    $('btnStart').disabled=true; $('btnStop').disabled=false; setChip('กำลังบันทึก…', true);
-    t0 = Date.now(); $('timer').textContent='00:00';
-    timerId = setInterval(()=>{ $('timer').textContent = fmt(((Date.now()-t0)/1000)|0); }, 500);
-  }catch(e){ setChip('ไม่พบไมค์/ไม่ได้อนุญาต', false); }
-};
-
-$('btnStop').onclick = ()=>{
-  if(mediaRecorder && mediaRecorder.state==='recording'){ mediaRecorder.stop(); }
-  $('btnStart').disabled=false; $('btnStop').disabled=true;
-  clearInterval(timerId); setChip('กำลังอัปโหลด…', true);
-};
-
-$('btnUpload').onclick = async ()=>{
-  const f=$('file').files[0];
-  if(!f) return alert('เลือกไฟล์เสียงก่อน');
-  await uploadBlob(f, f.name||'audio.webm');
-};
-
-async function uploadBlob(blob, filename){
-  try{
-    const fd=new FormData();
-    fd.append('audio', blob, filename);
-    fd.append('clinicKey', $('clinic').value);
-    const r = await fetch('/api/opd/upload-audio',{ method:'POST', body: fd });
-    const d = await r.json();
+/* ---------- File upload ---------- */
+$('btnUpload').onclick=async()=>{ const f=$('file').files[0]; if(!f) return alert('เลือกไฟล์เสียงก่อน'); await uploadBlob(f,f.name||'audio.webm'); };
+async function uploadBlob(blob,filename){
+  try{ const fd=new FormData(); fd.append('audio',blob,filename); fd.append('clinicKey',$('clinic').value);
+    const r=await fetch('/api/opd/upload-audio',{method:'POST',body:fd}); const d=await r.json();
     if(!d.ok) throw new Error(d.message||d.error||'upload failed');
-    $('transcript').value = d.transcript || '';
-    $('opdOut').value = d.summary || '';
-    $('doneBadge').style.display='inline-flex';
-    setChip('สรุปสำเร็จ', true);
-  }catch(e){
-    $('doneBadge').style.display='none';
-    setChip('อัปโหลดล้มเหลว', false);
-    alert('อัปโหลดล้มเหลว: '+(e.message||e));
-  }
+    $('transcript').value=d.transcript||''; $('opdOut').value=d.summary||''; $('doneBadge').style.display='inline-flex'; setChip('สรุปสำเร็จ', true);
+  }catch(e){ $('doneBadge').style.display='none'; setChip('อัปโหลดล้มเหลว', false); alert(e.message||e); }
 }
 
 /* ---------- Summaries from text ---------- */
-$('btnSumm').onclick = ()=>summarize(false);
-$('btnSummDeep').onclick = ()=>summarize(true);
-$('btnCoach').onclick = doCoach;
-
+$('btnSumm').onclick=()=>summarize(false); $('btnSummDeep').onclick=()=>summarize(true);
 async function summarize(deep=false){
-  const text = $('transcript').value.trim();
-  if(!text) return alert('ยังไม่มีข้อความสำหรับสรุป');
-  $('opdOut').value = 'กำลังสรุป...';
-  try{
-    const body = { rawText: text, clinicKey: $('clinic').value };
-    if(deep) body.forceModel = 'o3';
-    const r = await fetch('/api/opd/from-text', {
-      method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)
-    });
-    const d = await r.json();
-    if(!d.ok) throw new Error(d.message||d.error||'summarization failed');
-    $('opdOut').value = d.summary || '';
-    $('doneBadge').style.display='inline-flex';
-    setChip(`สรุปสำเร็จ (${d.model_used||'auto'})`, true);
-    // สลับไปแท็บ OPD
-    document.querySelector('.tab[data-pane="opd"]').click();
-  }catch(e){
-    $('opdOut').value = '❌ ล้มเหลว: ' + (e.message||e);
-    setChip('สรุปล้มเหลว', false);
-  }
+  const text=$('transcript').value.trim(); if(!text) return alert('ยังไม่มีข้อความสำหรับสรุป');
+  $('opdOut').value='กำลังสรุป...';
+  try{ const body={rawText:text,clinicKey:$('clinic').value}; if(deep) body.forceModel='o3';
+    const r=await fetch('/api/opd/from-text',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json(); if(!d.ok) throw new Error(d.message||d.error||'summarization failed');
+    $('opdOut').value=d.summary||''; $('doneBadge').style.display='inline-flex'; setChip(`สรุปสำเร็จ (${d.model_used||'auto'})`, true); document.querySelector('.tab[data-pane="opd"]').click();
+  }catch(e){ $('opdOut').value='❌ ล้มเหลว: '+(e.message||e); setChip('สรุปล้มเหลว', false); }
 }
 
-async function doCoach(){
-  const text = $('transcript').value.trim();
-  if(!text) return alert('ยังไม่มีข้อความ');
+/* ---------- Coaching ---------- */
+$('btnCoach').onclick=async()=>{ const text=$('transcript').value.trim(); if(!text) return alert('ยังไม่มีข้อความ');
   setChip('กำลังสร้างแผน…', true);
-  try{
-    const r = await fetch('/api/coach',{ method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ rawText: text, clinicKey: $('clinic').value, forceModel:'o3' })
-    });
-    const d = await r.json();
-    if(!d.ok) throw new Error(d.message||d.error);
-    // แสดงผล 3 ส่วน
-    $('patientMd').innerHTML   = mdToHtml(d.patient_advice_md || '—');
-    $('clinicianMd').innerHTML = mdToHtml(d.clinician_brief_md || '—');
-    $('deepMd').innerHTML      = mdToHtml(d.deep_plan_md || '—');
-    $('doneBadge').style.display='inline-flex';
-    setChip(`สำเร็จ (${d.model_used})`, true);
-    // เปลี่ยนไปแท็บผู้ป่วยก่อน
-    document.querySelector('.tab[data-pane="patient"]').click();
-  }catch(e){
-    setChip('ล้มเหลว', false);
-    alert(e.message||e);
-  }
+  try{ const r=await fetch('/api/coach',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rawText:text,clinicKey:$('clinic').value,forceModel:'o3'})});
+    const d=await r.json(); if(!d.ok) throw new Error(d.message||d.error);
+    $('patientMd').innerHTML=mdToHtml(d.patient_advice_md||'—'); $('clinicianMd').innerHTML=mdToHtml(d.clinician_brief_md||'—'); $('deepMd').innerHTML=mdToHtml(d.deep_plan_md||'—');
+    $('doneBadge').style.display='inline-flex'; setChip(`สำเร็จ (${d.model_used})`, true); document.querySelector('.tab[data-pane="patient"]').click();
+  }catch(e){ setChip('ล้มเหลว', false); alert(e.message||e); }
+};
+
+/* ---------- Follow-up timeline (localStorage) ---------- */
+const FU_KEY='opd_followup_entries';
+function fuLoad(){ try{return JSON.parse(localStorage.getItem(FU_KEY)||'[]');}catch{return [];} }
+function fuSave(a){ localStorage.setItem(FU_KEY, JSON.stringify(a||[])); }
+function fuRender(){ const list=fuLoad(); const el=$('fuList'); if(!list.length){ el.innerHTML='—'; return; }
+  el.innerHTML=list.slice().reverse().map(it=>`
+    <div style="border:1px solid #e5e7eb;border-radius:10px;padding:12px;margin:8px 0;background:#fff">
+      <div style="display:flex;justify-content:space-between;align-items:center"><strong>ครั้งที่ ${it.visit_no}</strong><span class="muted">${new Date(it.time).toLocaleString()}</span></div>
+      <div class="md" style="margin-top:8px">${mdToHtml([
+        `### Chief update`,`- ${it.note.chief_update||'-'}`,
+        `\n### Changes since last`,...(it.note.changes_since_last||[]).map(v=>`- ${v}`),
+        `\n### Medications update`,...(it.note.meds_update||[]).map(v=>`- ${v}`),
+        `\n### Exam focus`,...(it.note.exam_focus||[]).map(v=>`- ${v}`),
+        `\n### Assessment`,`- ${it.note.assessment||'-'}`,
+        `\n### Plan`,...(it.note.plan||[]).map(v=>`- ${v}`),
+        `\n### Return`,`- นัดอีก ${it.note.return?.when_days||'-'} วัน (${it.note.return?.mode||'-'})`,
+        `\n### Red flags`,...(it.note.red_flags||[]).map(v=>`- ${v}`)
+      ].join('\n'))}</div></div>`).join('');
 }
+$('btnFU').onclick=async()=>{ const text=$('transcript').value.trim(); if(!text) return alert('ยังไม่มีข้อความ');
+  setChip('กำลังสร้างบันทึกติดตาม…', true);
+  try{ const r=await fetch('/api/followup/note',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({rawText:text,clinicKey:$('clinic').value,forceModel:'o3'})});
+    const d=await r.json(); if(!d.ok) throw new Error(d.message||d.error);
+    const list=fuLoad(); const visit_no=(list[list.length-1]?.visit_no||0)+1;
+    list.push({visit_no,time:Date.now(),clinic:$('clinic').value,model:d.model_used,note:d.note}); fuSave(list); fuRender();
+    document.querySelector('.tab[data-pane="fu"]').click(); setChip(`บันทึกติดตามสำเร็จ (ครั้งที่ ${visit_no})`, true);
+  }catch(e){ setChip('Follow-up ล้มเหลว', false); alert(e.message||e); }
+};
+$('btnExportFUjson').onclick=()=>{ const data=fuLoad(); const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'})); a.download='followup.json'; a.click(); };
+$('btnExportFUcsv').onclick=()=>{ const data=fuLoad(); const header=['visit_no','time','clinic','chief_update','assessment','return_when_days','return_mode'].join(',');
+  const rows=data.map(it=>{ const n=it.note||{}; return [it.visit_no,new Date(it.time).toISOString(),it.clinic,JSON.stringify(n.chief_update||'').replaceAll('"','""'),JSON.stringify(n.assessment||'').replaceAll('"','""'),n.return?.when_days??'',n.return?.mode??''].join(','); });
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([[header,...rows].join('\n')],{type:'text/csv;charset=utf-8'})); a.download='followup.csv'; a.click();
+};
+$('btnClearFU').onclick=()=>{ if(confirm('ล้างรายการติดตามที่เก็บไว้บนเครื่องนี้ทั้งหมด?')){ fuSave([]); fuRender(); } };
 
-/* ---------- Export PDF (เปิดหน้าพิมพ์) ---------- */
-function printHtml(title, html){
-  const w = window.open('', '_blank');
-  w.document.write(`
-    <html><head><meta charset="utf-8"><title>${title}</title>
-      <style>
-        body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'TH SarabunPSK',sans-serif; line-height:1.5; padding:24px}
-        h1,h2,h3{margin:8px 0}
-        ul{margin:6px 0 6px 1.2rem}
-        li{margin:4px 0}
-        .muted{color:#6b7280}
-        .hdr{border-bottom:1px solid #e5e7eb; margin-bottom:12px; padding-bottom:6px}
-      </style>
-    </head><body>
-      <div class="hdr"><h2>${title}</h2><div class="muted">${new Date().toLocaleString()}</div></div>
-      ${html}
-    </body></html>
-  `);
-  w.document.close();
-  w.focus();
-  w.print();
-}
+/* ---------- Export PDF ---------- */
+function printHtml(title, html){ const w=window.open('','_blank'); w.document.write(`<html><head><meta charset="utf-8"><title>${title}</title>
+  <style>body{font-family:system-ui,-apple-system,Segoe UI,Roboto,'TH SarabunPSK',sans-serif;line-height:1.5;padding:24px}h1,h2,h3{margin:8px 0}ul{margin:6px 0 6px 1.2rem}li{margin:4px 0}.muted{color:#6b7280}.hdr{border-bottom:1px solid #e5e7eb;margin-bottom:12px;padding-bottom:6px}</style>
+</head><body><div class="hdr"><h2>${title}</h2><div class="muted">${new Date().toLocaleString()}</div></div>${html}</body></html>`); w.document.close(); w.focus(); w.print(); }
+$('btnPrintOPD').onclick=()=>printHtml('OPD Card', `<pre>${($('opdOut').value||'').replace(/</g,'&lt;')}</pre>`);
+$('btnPrintPatient').onclick=()=>printHtml('คำแนะนำผู้ป่วย', $('patientMd').innerHTML);
+$('btnPrintClinician').onclick=()=>printHtml('คำแนะนำแพทย์', $('clinicianMd').innerHTML);
+$('btnPrintDeep').onclick=()=>printHtml('แผนเชิงลึก', $('deepMd').innerHTML);
 
-$('btnPrintOPD').onclick      = ()=>printHtml('OPD Card', `<pre>${($('opdOut').value||'').replace(/</g,'&lt;')}</pre>`);
-$('btnPrintPatient').onclick  = ()=>printHtml('คำแนะนำผู้ป่วย', $('patientMd').innerHTML);
-$('btnPrintClinician').onclick= ()=>printHtml('คำแนะนำแพทย์', $('clinicianMd').innerHTML);
-$('btnPrintDeep').onclick     = ()=>printHtml('แผนเชิงลึก', $('deepMd').innerHTML);
-
-/* ---------- Utilities ---------- */
-$('btnCopyOPD').onclick = ()=>{ navigator.clipboard.writeText($('opdOut').value||''); };
-$('btnSaveOPD').onclick = ()=>{ const t=$('opdOut').value||''; if(!t) return; const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([t],{type:'text/plain'})); a.download='opd_card.txt'; a.click(); };
-
-$('btnClearTranscript').onclick=()=>{ $('transcript').value=''; };
-
-loadMics();
+/* ---------- Misc ---------- */
+$('btnCopyOPD').onclick=()=>navigator.clipboard.writeText($('opdOut').value||'');
+$('btnSaveOPD').onclick=()=>saveText('opd_card.txt',$('opdOut').value||'');
+$('btnClearTranscript').onclick=()=>{$('transcript').value='';};
+loadMics(); fuRender();
 </script>
 </body>
 </html>
