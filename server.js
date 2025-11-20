@@ -54,32 +54,32 @@ const CLINICS = {
       imaging:['MRI/CT ตามอาการและข้อบ่งชี้'], meds:['ทบทวน adherence/AE ของยา neuro','ปรับยาเฉพาะตามอาการ'],
       counsel:['สังเกต red flags ทางระบบประสาท','ป้องกันหกล้ม','นอน โภชนาการ ออกกำลังกาย'],
       monitor:['อาการเด่น การเดิน คำพูด'], red:['อ่อนแรง ชาฉับพลัน','พูดลำบาก ตามัวเฉียบพลัน','ชักต่อเนื่อง'], team:['Rehab PT OT ตามจำเป็น'], tele:true },
-    promptHint:`เน้นสรุปอาการระบบประสาท ตรวจโฟกัส CN มอเตอร์ เซนซอรี การเดิน และแผนติดตามที่จำเป็น`
+    promptHint:`เน้นสรุปอาการระบบประสาท ตรวจโฟกัส CN มอเตอร์ เซนซอรี การเดิน และแผนติดตามที่จำเป็น  และ code ICD10 SNOMED`
   },
   neurosx: { name:'Neurosurgery',
     followup:{ default_window_days:14, tests:['CBC (post-op ถ้าจำเป็น)','Electrolytes (ถ้าสงสัย SIADH/DI)'],
       imaging:['CT/MRI follow-up ตามชนิดผ่าตัด/ภาวะเลือดออก/มวลก้อน'], meds:['Pain control','Antibiotics','DVT prophylaxis'],
       counsel:['การดูแลแผลและสังเกตติดเชื้อ','ข้อจำกัดกิจกรรม'], monitor:['ไข้ ปวดแผล แผลบวมแดง','Neurologic status baseline'],
       red:['แผลมีหนอง','ปวดศีรษะรุนแรง','ซึมลง ชัก'], team:['Neuro ICU Functional team'], tele:false },
-    promptHint:`เพิ่มหัวข้อภาวะหลังผ่าตัด การดูแลแผล คำแนะนำกลับบ้าน และ red flags`
+    promptHint:`เพิ่มหัวข้อภาวะหลังผ่าตัด การดูแลแผล คำแนะนำกลับบ้าน และ red flags และ code ICD10 SNOMED`
   },
   rehab: { name:'Rehabilitation',
     followup:{ default_window_days:21, tests:['Spasticity assessment (ถ้าจำเป็น)'], meds:['ปรับ antispastic agents analgesics'],
       counsel:['โปรแกรม PT OT SLT ที่บ้าน','ป้องกันหกล้ม แผลกดทับ'], monitor:['Goal attainment Pain scale'],
       red:['ปวดมากผิดปกติ','แผลกดทับ','ล้มถี่ขึ้น'], team:['PT OT SLT Nutrition'], tele:true },
-    promptHint:`เน้นเป้าหมายฟังก์ชัน โปรแกรม PT OT SLT อุปกรณ์ช่วยเดิน ADL`
+    promptHint:`เน้นเป้าหมายฟังก์ชัน โปรแกรม PT OT SLT อุปกรณ์ช่วยเดิน ADL และ code ICD10 SNOMED`
   },
   psych: { name:'Psychiatry',
     followup:{ default_window_days:28, tests:['CBC/CMP (ถ้าปรับยาเมตาบอลิก)','Lipid/Glucose (ถ้าใช้ SGA)'],
       meds:['ปรับ SSRIs/SNRIs/SGA','ตรวจ drug interaction'], counsel:['สัญญาณเตือนซึมเศร้ารุนแรง','การนอน การจัดการความเครียด'],
       monitor:['PHQ-9 GAD-7','Side-effect checklist'], red:['คิดทำร้ายตนเอง/ผู้อื่น','สับสนเฉียบพลัน','EPS รุนแรง'], team:['Psychology Social Work Family'], tele:true },
-    promptHint:`สรุปอารมณ์ ความคิด พฤติกรรม ประเมินความปลอดภัย และแผนติดตามยา`
+    promptHint:`สรุปอารมณ์ ความคิด พฤติกรรม ประเมินความปลอดภัย และแผนติดตามยา และ code ICD10 SNOMED`
   },
   oph: { name:'Ophthalmology',
     followup:{ default_window_days:14, tests:['Visual acuity','IOP','OCT/Visual field'],
       meds:['ปรับตารางหยอดตา ยาลดความดันตา'], counsel:['เทคนิคหยอดตา','หลีกเลี่ยงขยี้ตา'],
       monitor:['ปวดตา ตามัว แสงแฟลช'], red:['ปวดตารุนแรง','สายตาลดเฉียบพลัน','ตาแดงมาก'], team:['Neuro-ophthalmology'], tele:true },
-    promptHint:`ระบุ VA IOP สี field และเน้นคำแนะนำการใช้ยาหยอดตา`
+    promptHint:`ระบุ VA IOP สี field และเน้นคำแนะนำการใช้ยาหยอดตา และ code ICD10 SNOMED`
   }
 };
 
@@ -100,6 +100,7 @@ function buildThaiPrompt(text, clinicKey='neuromed'){
 - Past History / Meds / Allergy / Risk
 - Physical Exam (เฉพาะจุดสำคัญ)
 - Assessment + Plan
+- code ICD10 SNOMED
 แนวทางเฉพาะคลินิก: ${c.promptHint}
 
 --- ข้อความดิบ ---
@@ -217,3 +218,4 @@ app.use(express.static(path.join(__dirname,'public')));
 app.get('*',(_,r)=>r.sendFile(path.join(__dirname,'public','index.html')));
 
 app.listen(PORT,()=>console.log(`✅ Server running at http://localhost:${PORT}`));
+
