@@ -1,7 +1,14 @@
+# Secrets
+.env
+.env.*
+
+# Node
 node_modules/
-.env
+
+# Uploads
 uploads/
-node_modules
-uploads
-.env
+
+# OS
 .DS_Store
+Thumbs.db
+
