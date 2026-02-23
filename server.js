@@ -15,7 +15,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 3001;
-const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'o3';
 const TRANSCRIBE_MODEL = process.env.TRANSCRIBE_MODEL || 'gpt-4o-mini-transcribe';
 const BASIC_USER = process.env.BASIC_USER || '';
 const BASIC_PASS = process.env.BASIC_PASS || '';
@@ -25,7 +25,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // Middleware
 app.disable('x-powered-by');
-app.use(express.json({ limit: '3mb' }));
+app.use(express.json({ limit: '5mb' }));
 app.use(cors());
 app.use(rateLimit({ windowMs: 60_000, max: 60 }));
 
@@ -218,5 +218,6 @@ app.use(express.static(path.join(__dirname,'public')));
 app.get('*',(_,r)=>r.sendFile(path.join(__dirname,'public','index.html')));
 
 app.listen(PORT,()=>console.log(`✅ Server running at http://localhost:${PORT}`));
+
 
 
