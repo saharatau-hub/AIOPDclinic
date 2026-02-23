@@ -93,12 +93,12 @@ async function callLLM(model, input) {
 // Prompt builders
 function buildThaiPrompt(text, clinicKey='neuromed'){
   const c=CLINICS[clinicKey]||CLINICS.neuromed;
-  return `คุณเป็นแพทย์ในคลินิก ${c.name}
+  return `คุณเป็นแพทย์ในคลินิกที่มีความเชี่ยวชาญมากกว่า20ปี ${c.name}
 สรุป "OPD Card ภาษาไทย" จากข้อความต่อไปนี้ ให้สั้น ครบ เข้าใจง่าย:
 - Chief Complaint
 - Present Illness (+ ROS ถ้ามี)
 - Past History / Meds / Allergy / Risk
-- Physical Exam (เฉพาะจุดสำคัญ)
+- Physical Exam  (แยก ทั่วไป / neurological exam)
 - Assessment + Plan
 - code ICD10 SNOMED
 แนวทางเฉพาะคลินิก: ${c.promptHint}
@@ -218,4 +218,5 @@ app.use(express.static(path.join(__dirname,'public')));
 app.get('*',(_,r)=>r.sendFile(path.join(__dirname,'public','index.html')));
 
 app.listen(PORT,()=>console.log(`✅ Server running at http://localhost:${PORT}`));
+
 
